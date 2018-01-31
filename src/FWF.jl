@@ -13,7 +13,9 @@ Configuration Settings for fixed width file parsing.
   * `skip`: integer of the number of lines to skip; default `0`
   * `trimstrings`: true if strings should be trimmed; default `true`
   * `missingcheck`: true if fields should be checked for null values; default `true`
-  * `missingvals`: Dictionary in form of String=>true for values that equal missing
+  * `missingvals`: Dictionary in form of String=>missing for values that equal missing
+  * `dateformats`: Dictionary in the form of Int=>DateFormat to specify date formats for a column
+  * `columnrange`: Vector of UnitRanges that specifcy the widths of each column.
   * ``
 """
 
@@ -52,10 +54,5 @@ end
 
 include("Source.jl")
 include("parsefields.jl")
-#include("float.jl")
 include("io.jl")
-#include("TransposedSource.jl")
-#include("Sink.jl")
-#include("validate.jl")
-
 end
