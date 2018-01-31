@@ -1,4 +1,4 @@
-
+using DataStreams
 """
 Implement the `Data.Source` interface in the `DataStreams.jl` package.
 
@@ -15,7 +15,8 @@ end
 function Base.show(io::IO, f::Source)
     println(io, "FWF.Source: ", f.fullpath)
     println(io, "Currentline   : ")
-    show(io, f.columnwidths)
+    show(io, f.currentline)
+    println(io)
     show(io, f.options)
     show(io, f.schema)
 end
@@ -41,9 +42,9 @@ function Source(
     rows::Int=0,
     types::Vector{Union{Type, DateFormat}}=Vector{Union{Type, DateFormat}}()
     )
-    datedict = Dict{Int, DateFormat}
-    typelist = Vector{Type}
-    missingdict = Dict{String, Bool}
+    datedict = Dict{Int, DateFormat}()
+    typelist = Vector{Type}()
+    missingdict = Dict{String, Missing}()
 
     isa(fullpath, AbstractString) && (isfile(fullpath) || throw(ArgumentError("\"$fullpath\" is not a valid file")))
     
@@ -80,22 +81,22 @@ function Source(
     end
 
     # Number of columns = # of widths
-    (columnwidths != nothing) && (isempty(columnwidths) || throw(ArgumentError("No column widths provided")))
+    isempty(columnwidths) && throw(ArgumentError("No column widths provided"))
     columns = length(columnwidths)
 
     rangewidths = Vector{UnitRange{Int}}(length(columnwidths))
     if isa(columnwidths, Vector{Int})
-        last = 1
+        l = 0
         for i in eachindex(columnwidths)
-            rangewidths[i] = last+1:columnwidths[i]
-            last=last(rangewidths[i])
+            rangewidths[i] = l+1:l+columnwidths[i]
+            l=last(rangewidths[i])
         end
     else
         rangewidths = columnwidths
         #Validate we have an unbroken range
         for i in 1:length(columnwidths)
             i==1 && (continue)
-            (last(columnwidths[i-1])+1 != first(columnwidths[i])) && (throw(ArgumentError("Non-Continuous ranges "*columnwidths[i=1]*" "*columnwidths[i]))) 
+            (last(columnwidths[i-1])+1 != first(columnwidths[i])) && (throw(ArgumentError("Non-Continuous ranges "*columnwidths[i-1]*" "*columnwidths[i]))) 
         end
     end
 
@@ -120,11 +121,11 @@ function Source(
         for i in eachindex(headers)
             length(headers[i]) < 1 && (headers[i] = "Column$i")
         end
-    elseif (isa(headers, Bool) && !headers) || isempty(header)
+    elseif (isa(header, Bool) && !header) || isempty(header)
         # number columns
-        headers = ["Column$i" for i = 1:columns]
-    elseif !isempty(headers)
-        length(headers) != columns && (throw(ArgumentError("Headers doesn't match columns"))) 
+        header = ["Column$i" for i = 1:columns]
+    elseif !isempty(header)
+        length(header) != columns && (throw(ArgumentError("Headers doesn't match columns"))) 
     else
         throw(ArgumentError("Can not determine headers")) 
     end
@@ -152,11 +153,11 @@ function Source(
         end
     end
 
-    sch = Data.Schema(typelist, headers, ifelse(rows < 0, missing, rows))
+    sch = Data.Schema(typelist, header, ifelse(rows < 0, missing, rows))
     opt = Options(missingcheck=missingcheck, trimstrings=trimstrings, 
                     skip=skip, missingvals=missingdict, 
                     dateformats = datedict,
-                    columnrange=columnwidths)
+                    columnrange=rangewidths)
     return Source(sch, opt, source, string(fullpath), datapos, Vector{String}())
 end
 
