@@ -15,10 +15,11 @@ The contents of `vals` are replaced.
 # * Break it into chunks based on column widths
 
 function readsplitline!(vals::Vector{String}, source::FWF.Source)
-    return readsplitline!(vals, source.io, source.options.columnranges, source.options.trimstrings, source.options.skiponerror)
+    return readsplitline!(vals, source.io, source.options.columnrange, source.options.trimstrings, source.options.skiponerror)
 end
 
 function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool=true, skiponerror=true) 
+    empty!(vals)
     # Parameter validation
     ((columnwidths == nothing) || (isempty(columnwidths))) && throw(ArgumentError("No column widths provided"))
     eof(io) && (throw(ArgumentError("IO not available")))

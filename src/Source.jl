@@ -10,6 +10,7 @@ mutable struct Source{I} <: Data.Source
     fullpath::String
     datapos::Int # the position in the IOBuffer where the rows of data begins
     currentline::Vector{String}
+    lastcol::Int
 end
 
 function Base.show(io::IO, f::Source)
@@ -197,7 +198,7 @@ function Source(
                     skiponerror=skiponerror, skip=skip, missingvals=missingdict, 
                     dateformats = datedict,
                     columnrange=rangewidths)
-    return Source(sch, opt, source, string(fullpath), datapos, Vector{String}())
+    return Source(sch, opt, source, string(fullpath), datapos, Vector{String}(), 0)
 end
 
 # needed? construct a new Source from a Sink
