@@ -1,3 +1,4 @@
+file = joinpath(dirname(@__FILE__),"testfile.txt")
 
 @testset "Parse Testing" begin
     tmp = FWF.Source(file, [4,4,8], types=[String, Int, DateFormat("mmddyyyy")], missingcheck=false, missings=["abcd","10112017"])
