@@ -84,6 +84,7 @@ function Source(
     ;
     missingcheck::Bool=true,
     trimstrings::Bool=true,
+    skiponerror::Bool=true,
     use_mmap::Bool=true,
     skip::Int=0,
     rows::Int=0,
@@ -193,7 +194,7 @@ function Source(
 
     sch = Data.Schema(typelist, headerlist, ifelse(rows < 0, missing, rows))
     opt = Options(missingcheck=missingcheck, trimstrings=trimstrings, 
-                    skip=skip, missingvals=missingdict, 
+                    skiponerror=skiponerror, skip=skip, missingvals=missingdict, 
                     dateformats = datedict,
                     columnrange=rangewidths)
     return Source(sch, opt, source, string(fullpath), datapos, Vector{String}())

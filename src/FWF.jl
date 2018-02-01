@@ -22,6 +22,7 @@ Configuration Settings for fixed width file parsing.
 struct Options
     missingcheck::Bool
     trimstrings::Bool
+    skiponerror::Bool
     skip::Int
     missingvals::Dict{String, Missing}
     dateformats::Dict{Int, DateFormat}
@@ -29,17 +30,18 @@ struct Options
 end
 
  Options(;missingcheck=true, 
-        trimstrings=true, skip=0, 
+        trimstrings=true, skiponerror=true, skip=0, 
         missingvals=Dict{String, Missing}(), 
         dateformats=Dict{Int, DateFormat}(),
         columnrange=Vector{UnitRange{Int}}()) =
-    Options(missingcheck, trimstrings, skip, missingvals, 
+    Options(missingcheck, trimstrings, skiponerror, skip, missingvals, 
             dateformats, columnrange)
 
 function Base.show(io::IO, op::Options)
     println(io, "   FWF.Options:")
     println(io, "     nullcheck: ", op.missingcheck)
     println(io, "   trimstrings: ", op.trimstrings)
+    println(io, "   skiponerror: ", op.skiponerror)
     println(io, "          skip: ", op.skip)
     println(io, "   missingvals:", )
     show(io, op.missingvals)

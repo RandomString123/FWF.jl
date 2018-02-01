@@ -1,9 +1,12 @@
 """
     FWF.readsplitline!(vals::Vector{String}, source::FWF.Source)
+    FWF.readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool, skiponerror::Bool)
 
-Read a single line from a `FWF.Source` as a `Vector{String}` and
+Read next line from a `FWF.Source` or `IO` as a `Vector{String}` and
 store the values in `vals`.
-Fields are determined by the field widths stored in the source options
+Fields are determined by the field widths stored in the `source` options or `columnwidths`
+Fields will be trimed if `trim` is true
+Row or rows will be skipped if there is an error found if `skiponerror` is true
 The contents of `vals` are replaced.
 """
 # This function is pretty simple
@@ -12,19 +15,29 @@ The contents of `vals` are replaced.
 # * Break it into chunks based on column widths
 
 function readsplitline!(vals::Vector{String}, source::FWF.Source)
-    return readsplitline!(vals, source.io, source.options.columnranges, source.options.trimstrings)
+    return readsplitline!(vals, source.io, source.options.columnranges, source.options.trimstrings, source.options.skiponerror)
 end
 
-function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool) 
+function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool=true, skiponerror=true) 
     # Parameter validation
     ((columnwidths == nothing) || (isempty(columnwidths))) && throw(ArgumentError("No column widths provided"))
     eof(io) && (throw(ArgumentError("IO not available")))
     
     rowlength = last(last(columnwidths))
     # Read a line and validate
-    line = readline(io)
-    length(line) != rowlength && (throw(ParsingException("Invalid rowlength: "*string(length(line))))) 
-    
+    test = true
+    line = ""
+
+    while test
+        line = readline(io)
+        if (length(line) != rowlength)
+            !skiponerror && throw(ParsingException("Invalid length line: "*string(length(line))))
+            skiponerror && println(STDOUT, "Invalid length line:", line)
+        else
+            test = false
+        end
+    end
+
     # Break it up into chunks
     for range in columnwidths
         str = line[range]
