@@ -3,13 +3,17 @@ file = joinpath(dirname(@__FILE__),"testfile.txt")
 @testset "Parse Testing" begin
     tmp = FWF.Source(file, [4,4,8], types=[String, Int, DateFormat("mmddyyyy")], missingcheck=false, missings=["abcd","10112017"])
     @test !FWF.missingon(tmp)
+    tmp = FWF.Source(file, [4,4,8], types=[String, Int, DateFormat("mmddyyyy")], missings=["abcd","10112017"])
     @test FWF.checkmissing("abcd", tmp.options.missingvals)
     @test FWF.get_format(tmp, 1) == nothing
     @test FWF.get_format(tmp, 3) == DateFormat("mmddyyyy")
     @test_throws FWF.ParsingException FWF.parsefield(tmp, Int, 3)
-    @test FWF.parsefield(tmp, String, 1) = "abcd"
-    @test FWF.parsefield(tmp, Int, 2) = 1234
-    @test FWF.parsefield(tmp, Date, 3) = Date("2017-10-10")
+    @test FWF.parsefield(tmp, String, 1) == missing
+    @test FWF.parsefield(tmp, Int, 2) == 1234
+    @test FWF.parsefield(tmp, Date, 3) == Date("2017-10-10")
+    @test FWF.parsefield(tmp, String, 1) == "efgh"
+    @test FWF.parsefield(tmp, Int, 2) == 5678
+    @test FWF.parsefield(tmp, Date, 3) == missing
     @test_throws BoundsError FWF.parsefield(tmp, Date, 4)
     b = """
     2.1
