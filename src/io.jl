@@ -15,21 +15,21 @@ function readsplitline!(vals::Vector{String}, source::FWF.Source)
     return readsplitline!(vals, source.io, source.options.columnranges, source.options.trimstrings)
 end
 
-function readsplitline!(vals::Vector{Union{String, Nullable}}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool) 
+function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool) 
     # Parameter validation
-    (columnwidths != nothing) && (isempty(columnwidths) || throw(ArgumentError("No column widths provided")))
+    ((columnwidths == nothing) || (isempty(columnwidths))) && throw(ArgumentError("No column widths provided"))
     eof(io) && (throw(ArgumentError("IO not available")))
     
     rowlength = last(last(columnwidths))
     # Read a line and validate
     line = readline(io)
-    length(line) != rowlength && (throw(ParsingException("Invalid rowlength: "length(line)))) 
+    length(line) != rowlength && (throw(ParsingException("Invalid rowlength: "*string(length(line))))) 
     
     # Break it up into chunks
     for range in columnwidths
         str = line[range]
         trim && (str = strip(str))
-        append!(vals, str)
+        push!(vals, str)
     end
     return vals
 end
