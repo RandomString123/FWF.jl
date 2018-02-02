@@ -7,6 +7,17 @@
 | [![][pkg-0.6-img]][pkg-0.6-url] | [![][travis-img]][travis-url] [![][codecov-img]][codecov-url] |
 
 
+## Background
+This package uses CSV.jl as an inspration and a code template for parsing
+fixed width data files and loading them into julia.  It has the features
+* Data field conversion into Int, Missing, Float64, and Date types
+* Line parsing and field creation base on Int or UnitRange based field widths.
+* Supports DataStream Source functionality to enable streaming into a DataFrame
+* Robust missing value detection
+* Skip malformed rows without terminating parsing
+* Custom header specifiction
+* Start of file row skipping
+
 ## Installation
 
 The package is registered in `METADATA.jl` and so can be installed with `Pkg.add`.
