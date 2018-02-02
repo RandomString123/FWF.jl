@@ -4,7 +4,7 @@
 
 | **PackageEvaluator**                                            | **Build Status**                                                                                |
 :---------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
-| [![][pkg-0.6-img]][pkg-0.6-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] |
+| [![][pkg-0.6-img]][pkg-0.6-url] | [![][travis-img]][travis-url] [![][codecov-img]][codecov-url] |
 
 
 ## Installation
@@ -26,7 +26,7 @@ Contributions are very welcome, as are feature requests and suggestions. Please 
 
 
 [travis-img]: https://travis-ci.org/RandomString123/FWF.jl.svg?branch=master
-[travis-url]: https://travis-ci.org/RandomString123/FWF.jl
+[travis-url]: https://travis-ci.org/RandomString123/FWF.jl?branch=master
 
 [codecov-img]: https://codecov.io/gh/RandomString123/FWF.jl/branch/master/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/RandomString123/FWF.jl
