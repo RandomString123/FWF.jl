@@ -20,7 +20,7 @@ fixed width data files and loading them into julia.  It has the features
 
 ## Installation
 
-The package is registered in `METADATA.jl` and so can be installed with `Pkg.add`.
+The package is (Hopefully soon to be) registered in `METADATA.jl` and so can be installed with `Pkg.add`.
 
 ```julia
 julia> Pkg.add("FWF")
