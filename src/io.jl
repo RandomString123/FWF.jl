@@ -49,44 +49,36 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
 end
 
 """
-`CSV.read(fullpath::Union{AbstractString,IO}, sink::Type{T}=DataFrame, args...; kwargs...)` => `typeof(sink)`
+`FWF.read(fullpath::Union{AbstractString,IO}, columnwidths::Union{Vector{UnitRange{Int}}, Vector{Int}}, sink::Type{T}=DataFrame, args...; kwargs...)` => `typeof(sink)`
 
-`CSV.read(fullpath::Union{AbstractString,IO}, sink::Data.Sink; kwargs...)` => `Data.Sink`
+`FWF.read(fullpath::Union{AbstractString,IO}, columnwidths::Union{Vector{UnitRange{Int}}, Vector{Int}}, sink::Data.Sink; kwargs...)` => `Data.Sink`
 
 
-parses a delimited file into a Julia structure (a DataFrame by default, but any valid `Data.Sink` may be requested).
+parses a fixed width file into a Julia structure (a DataFrame by default, but any valid `Data.Sink` may be requested).
 
-Minimal error-reporting happens w/ `CSV.read` for performance reasons; for problematic csv files, try [`CSV.validate`](@ref) which takes exact same arguments as `CSV.read` and provides much more information for why reading the file failed.
 
 Positional arguments:
 
 * `fullpath`; can be a file name (string) or other `IO` instance
+* `columnwidths`; can be a vector of integers or consecutive unit ranges that represents the column widths
+                    examples: [4,4,8] or [1:4,5:8, 9:16]
 * `sink::Type{T}`; `DataFrame` by default, but may also be other `Data.Sink` types that support streaming via `Data.Field` interface; note that the method argument can be the *type* of `Data.Sink`, plus any required arguments the sink may need (`args...`).
                     or an already constructed `sink` may be passed (2nd method above)
 
 Keyword Arguments:
 
-* `delim::Union{Char,UInt8}`: how fields in the file are delimited; default `','`
-* `quotechar::Union{Char,UInt8}`: the character that indicates a quoted field that may contain the `delim` or newlines; default `'"'`
-* `escapechar::Union{Char,UInt8}`: the character that escapes a `quotechar` in a quoted field; default `'\\'`
-* `null::String`: indicates how NULL values are represented in the dataset; default `""`
-* `dateformat::Union{AbstractString,Dates.DateFormat}`: how dates/datetimes are represented in the dataset; default `Base.Dates.ISODateTimeFormat`
-* `decimal::Union{Char,UInt8}`: character to recognize as the decimal point in a float number, e.g. `3.14` or `3,14`; default `'.'`
-* `truestring`: string to represent `true::Bool` values in a csv file; default `"true"`. Note that `truestring` and `falsestring` cannot start with the same character.
-* `falsestring`: string to represent `false::Bool` values in a csv file; default `"false"`
-* `header`: column names can be provided manually as a complete Vector{String}, or as an Int/AbstractRange which indicates the row/rows that contain the column names
-* `datarow::Int`: specifies the row on which the actual data starts in the file; by default, the data is expected on the next row after the header row(s); for a file without column names (header), specify `datarow=1`
-* `types`: column types can be provided manually as a complete Vector{Type}, or in a Dict to reference individual columns by name or number
-* `nullable::Bool`: indicates whether values can be nullable or not; `true` by default. If set to `false` and missing values are encountered, a `Data.NullException` will be thrown
-* `footerskip::Int`: indicates the number of rows to skip at the end of the file
-* `rows_for_type_detect::Int=100`: indicates how many rows should be read to infer the types of columns
-* `rows::Int`: indicates the total number of rows to read from the file; by default the file is pre-parsed to count the # of rows; `-1` can be passed to skip a full-file scan, but the `Data.Sink` must be set up to account for a potentially unknown # of rows
+* `missingcheck::Bool`: whether to check for missing values against the missings parameter; default = true
+* `trimstrings::Bool`: trim whitespace from all strings; default = true
+* `skiponerror::Bool`: if an invalid length line is encountered will skip to the next; default = true
 * `use_mmap::Bool=true`: whether the underlying file will be mmapped or not while parsing; note that on Windows machines, the underlying file will not be "deletable" until Julia GC has run (can be run manually via `gc()`) due to the use of a finalizer when reading the file.
+* `skip::Int`: number of rows at start of file to skip; default = 0
+* `rows::Int`: maximum number of rows to read from file; default = 0 (whole file)
+* `types`: a vector of how to parse each column (String, Int, Float64 are valid types) pass in the format for Date columns as DateFormat("")
+            example: [String, Int, DateFormat("mmddyyyy")]
+* `header`: column names can be provided as a Vector{String} or parameter can be set to `true` to use the first row as values or `false` to auto-generate names 
+* `missings`: a Vector{String} that represents all values that should be converted to missing; example: ["***", "NA", "NULL", "####"]
 * `append::Bool=false`: if the `sink` argument provided is an existing table, `append=true` will append the source's data to the existing data instead of doing a full replace
 * `transforms::Dict{Union{String,Int},Function}`: a Dict of transforms to apply to values as they are parsed. Note that a column can be specified by either number or column name.
-* `transpose::Bool=false`: when reading the underlying csv data, rows should be treated as columns and columns as rows, thus the resulting dataset will be the "transpose" of the actual csv data.
-* `categorical::Bool=true`: read string column as a `CategoricalArray` ([ref](https://github.com/JuliaData/CategoricalArrays.jl)), as long as the % of unique values seen during type detection is less than 67%. This will dramatically reduce memory use in cases where the number of unique values is small.
-* `weakrefstrings::Bool=true`: whether to use [`WeakRefStrings`](https://github.com/quinnj/WeakRefStrings.jl) package to speed up file parsing; can only be `=true` for the `Sink` objects that support `WeakRefStringArray` columns. Note that `WeakRefStringArray` still returns regular `String` elements.
 
 Example usage:
 ```
@@ -160,7 +152,7 @@ function read(fullpath::Union{AbstractString,IO}, columnwidths::Union{Vector{Uni
     return Data.close!(sink)
 end
 
-read(source::FWF.Source, sink=DataFrame, args...; append::Bool=false, transforms::Dict=Dict{Int,Function}()) = (sink = Data.stream!(source, sink, args...; append=append, transforms=transforms); return Data.close!(sink))
-read(source::FWF.Source, sink::T; append::Bool=false, transforms::Dict=Dict{Int,Function}()) where {T} = (sink = Data.stream!(source, sink; append=append, transforms=transforms); return Data.close!(sink))
+#read(source::FWF.Source, columnwidths::Union{Vector{UnitRange{Int}}, sink=DataFrame, args...; append::Bool=false, transforms::Dict=Dict{Int,Function}()) = (sink = Data.stream!(source, sink, args...; append=append, transforms=transforms); return Data.close!(sink))
+#read(source::FWF.Source, columnwidths::Union{Vector{UnitRange{Int}}, sink::T; append::Bool=false, transforms::Dict=Dict{Int,Function}()) where {T} = (sink = Data.stream!(source, sink; append=append, transforms=transforms); return Data.close!(sink))
 #read(source::CSV.TransposedSource, sink=DataFrame, args...; append::Bool=false, transforms::Dict=Dict{Int,Function}()) = (sink = Data.stream!(source, sink, args...; append=append, transforms=transforms); return Data.close!(sink))
 #read(source::CSV.TransposedSource, sink::T; append::Bool=false, transforms::Dict=Dict{Int,Function}()) where {T} = (sink = Data.stream!(source, sink; append=append, transforms=transforms); return Data.close!(sink))
