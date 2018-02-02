@@ -183,8 +183,8 @@ function Source(
                 typelist[i] = union_missing(usemissings, Date)
                 datedict[i] = types[i]
             elseif (isa(types[i], Type))
-                !(types[i] in (Int, Float64, String)) && (throw(ArgumentError("Invalid Type: "*string(types[i]))))
-                typelist[i] = union_missing(usemissings, types[i])
+                !(types[i] in (Int, Float64, String, Missing)) && (throw(ArgumentError("Invalid Type: "*string(types[i]))))
+                isa(types[i], Missing) ? Missing : typelist[i] = union_missing(usemissings, types[i])
             else
                throw(ArgumentError("Found type that is not a DateFormat or DataType")) 
             end

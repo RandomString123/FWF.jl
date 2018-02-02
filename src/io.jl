@@ -75,7 +75,7 @@ Keyword Arguments:
 * `use_mmap::Bool=true`: whether the underlying file will be mmapped or not while parsing; note that on Windows machines, the underlying file will not be "deletable" until Julia GC has run (can be run manually via `gc()`) due to the use of a finalizer when reading the file.
 * `skip::Int`: number of rows at start of file to skip; default = 0
 * `rows::Int`: maximum number of rows to read from file; default = 0 (whole file)
-* `types`: a vector of how to parse each column (String, Int, Float64 are valid types) pass in the format for Date columns as DateFormat("")
+* `types`: a vector of how to parse each column. (String, Int, Float64, Missing) are valid types, missing will convert whole comumn to `missing`. Pass in the format for Date columns as DateFormat("")
             example: [String, Int, DateFormat("mmddyyyy")]
 * `header`: column names can be provided as a Vector{String} or parameter can be set to `true` to use the first row as values or `false` to auto-generate names 
 * `missings`: a Vector{String} that represents all values that should be converted to missing; example: ["***", "NA", "NULL", "####"]

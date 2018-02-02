@@ -48,7 +48,7 @@ parsefield(::Type{Date}, usemissing::Bool, string::String, format) =
     null_to_missing(tryparse(Date, string, format), usemissing, Date())
 @inline parsefield(::Type{Union{Missing, T}}, usemissing::Bool, string::String, format) where {T} = 
     (parsefield(T, usemissing, string, format))
-
+@inline parsefield(::Type{Missing}, usemissing::Bool, string::String, format) = (missing)
 # Generic fallback
 function parsefield(T, usemissing::Bool, string::String, format)
     return null_to_missing(tryparse(T, string), usemissing, nothing)
