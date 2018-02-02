@@ -82,62 +82,54 @@ Keyword Arguments:
 * `append::Bool=false`: if the `sink` argument provided is an existing table, `append=true` will append the source's data to the existing data instead of doing a full replace
 * `transforms::Dict{Union{String,Int},Function}`: a Dict of transforms to apply to values as they are parsed. Note that a column can be specified by either number or column name.
 
-Example usage:
+Simple example using inline text:
 ```
-julia> dt = CSV.read("bids.csv")
-7656334×9 DataFrames.DataFrame
-│ Row     │ bid_id  │ bidder_id                               │ auction │ merchandise      │ device      │
-├─────────┼─────────┼─────────────────────────────────────────┼─────────┼──────────────────┼─────────────┤
-│ 1       │ 0       │ "8dac2b259fd1c6d1120e519fb1ac14fbqvax8" │ "ewmzr" │ "jewelry"        │ "phone0"    │
-│ 2       │ 1       │ "668d393e858e8126275433046bbd35c6tywop" │ "aeqok" │ "furniture"      │ "phone1"    │
-│ 3       │ 2       │ "aa5f360084278b35d746fa6af3a7a1a5ra3xe" │ "wa00e" │ "home goods"     │ "phone2"    │
+julia> FWF.read(IOBuffer("abc12310102017\ndef45610112017\n"), [3,3,8], types=[String,Int,DateFormat("mmddyyyy")])
+```
+Example usage from test dataset:
+```
+# Setup data frame with control information:
+julia> format = DataFrame(["PSEUDO-ID" 9 Int;
+    "EMPLOYEE_NAME" 23 Missing;
+    "FILE_DATE" 8  DateFormat("yyyymmdd");
+    "AGENCY" 2 String;
+    "SUB_AGENCY" 2 String;
+    "DUTY_STATION" 9 String;
+    "AGE" 6 String;
+    "EDUCATION_LEVEL" 2 String;
+    "PAY_PLAN" 2 String;
+    "GRADE" 2 String;
+    "LOS_LEVEL" 6 String;
+    "OCCUPATION" 4 String;
+    "OCCUPATIONAL_CATEGORY" 1 String;
+    "ADJUSTED_BASIC_PAY" 6 Int;
+    "SUPERVISORY_STATUS" 1 String;
+    "TYPE_OF_APPOINTMENT" 2 String;
+    "WORK_SCHEDULE" 1 String;
+    "NSFTP_IND"  1 String])
+
+#Setup NA values
+julia> strrep(s::String, r::UnitRange) = [repeat(s, n) for n in r]
+julia> naValues = vcat(strrep("*", 1:23), strrep("#", 1:23), "NAME WITHHELD BY AGENCY", "NAME WITHHELD BY OPM", "NAME UNKNOWN", "UNSP", "<NA>", "000000", "999999", "")
+
+
+julia> dt = FWF.read("sal.txt", convert(Array{Int},format[:x2]), 
+        header=convert(Array{String}, format[:x1]), types=convert(Array{Union{Type, DateFormat}},format[:x3]), 
+        missings=naValues)
+200000×18 DataFrames.DataFrame. Omitted printing of 8 columns
+│ Row    │ PSEUDO-ID │ EMPLOYEE_NAME │ FILE_DATE  │ AGENCY │ SUB_AGENCY │ DUTY_STATION │ AGE   │ EDUCATION_LEVEL │ PAY_PLAN │ GRADE │
+├────────┼───────────┼───────────────┼────────────┼────────┼────────────┼──────────────┼───────┼─────────────────┼──────────┼───────┤
+│ 1      │ 278418    │ missing       │ 1981-03-31 │ AA     │ 00         │ 110010001    │ 35-39 │ 07              │ GS       │ 09    │
+│ 2      │ 485025    │ missing       │ 1981-03-31 │ AA     │ 00         │ 110010001    │ 40-44 │ missing         │ GS       │ 13    │
+│ 3      │ 990825    │ missing       │ 1981-03-31 │ AA     │ 00         │ 110010001    │ 25-29 │ 15              │ GS       │ 15    │
+│ 4      │ 1220286   │ missing       │ 1981-03-31 │ AA     │ 00         │ 110010001    │ 35-39 │ missing         │ SR       │ 00    │
+⋮
+│ 199996 │ 6885054   │ missing       │ 1981-03-31 │ DJ     │ 02         │ missing      │ 20-24 │ 07              │ GS       │ 04    │
+│ 199997 │ 6885056   │ missing       │ 1981-03-31 │ DJ     │ 02         │ missing      │ 30-34 │ 13              │ GS       │ 10    │
+│ 199998 │ 6885057   │ missing       │ 1981-03-31 │ DJ     │ 02         │ missing      │ 30-34 │ 22              │ GS       │ 10    │
+│ 199999 │ 6885058   │ missing       │ 1981-03-31 │ DJ     │ 02         │ missing      │ 30-34 │ 18              │ GS       │ 10    │
+│ 200000 │ 6885059   │ missing       │ 1981-03-31 │ DJ     │ 02         │ missing      │ 30-34 │ 04              │ GS       │ 04    │
 ...
-```
-
-Other example invocations may include:
-```julia
-# read in a tab-delimited file
-CSV.read(file; delim='\t')
-
-# read in a comma-delimited file with null values represented as '\\N', such as a MySQL export
-CSV.read(file; null="\\N")
-
-# read a csv file that happens to have column names in the first column, and grouped data in rows instead of columns
-CSV.read(file; transpose=true)
-
-# manually provided column names; must match # of columns of data in file
-# this assumes there is no header row in the file itself, so data parsing will start at the very beginning of the file
-CSV.read(file; header=["col1", "col2", "col3"])
-
-# manually provided column names, even though the file itself has column names on the first row
-# `datarow` is specified to ensure data parsing occurs at correct location
-CSV.read(file; header=["col1", "col2", "col3"], datarow=2)
-
-# types provided manually; as a vector, must match length of columns in actual data
-CSV.read(file; types=[Int, Int, Float64])
-
-# types provided manually; as a Dict, can specify columns by # or column name
-CSV.read(file; types=Dict(3=>Float64, 6=>String))
-CSV.read(file; types=Dict("col3"=>Float64, "col6"=>String))
-
-# manually provided # of rows; if known beforehand, this will improve parsing speed
-# this is also a way to limit the # of rows to be read in a file if only a sample is needed
-CSV.read(file; rows=10000)
-
-# for data files, `file` and `file2`, with the same structure, read both into a single DataFrame
-# note that `df` is used as a 2nd argument in the 2nd call to `CSV.read` and the keyword argument
-# `append=true` is passed
-df = CSV.read(file)
-df = CSV.read(file2, df; append=true)
-
-# manually construct a `CSV.Source` once, then stream its data to both a DataFrame
-# and SQLite table `sqlite_table` in the SQLite database `db`
-# note the use of `CSV.reset!` to ensure the `source` can be streamed from again
-source = CSV.Source(file)
-df1 = CSV.read(source, DataFrame)
-CSV.reset!(source)
-db = SQLite.DB()
-sq1 = CSV.read(source, SQLite.Sink, db, "sqlite_table")
 ```
 """
 function read end
