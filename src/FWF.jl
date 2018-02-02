@@ -12,7 +12,7 @@ Configuration Settings for fixed width file parsing.
 
   * `skip`: integer of the number of lines to skip; default `0`
   * `trimstrings`: true if strings should be trimmed; default `true`
-  * `missingcheck`: true if fields should be checked for null values; default `true`
+  * `usemissings`: true if fields should be checked for null values; default `true`
   * `missingvals`: Dictionary in form of String=>missing for values that equal missing
   * `dateformats`: Dictionary in the form of Int=>DateFormat to specify date formats for a column
   * `columnrange`: Vector of UnitRanges that specifcy the widths of each column.
@@ -20,7 +20,7 @@ Configuration Settings for fixed width file parsing.
 """
 
 struct Options
-    missingcheck::Bool
+    usemissings::Bool
     trimstrings::Bool
     skiponerror::Bool
     skip::Int
@@ -29,17 +29,17 @@ struct Options
     columnrange::Vector{UnitRange{Int}}
 end
 
- Options(;missingcheck=true, 
+ Options(;usemissings=true, 
         trimstrings=true, skiponerror=true, skip=0, 
         missingvals=Dict{String, Missing}(), 
         dateformats=Dict{Int, DateFormat}(),
         columnrange=Vector{UnitRange{Int}}()) =
-    Options(missingcheck, trimstrings, skiponerror, skip, missingvals, 
+    Options(usemissings, trimstrings, skiponerror, skip, missingvals, 
             dateformats, columnrange)
 
 function Base.show(io::IO, op::Options)
     println(io, "   FWF.Options:")
-    println(io, "     nullcheck: ", op.missingcheck)
+    println(io, "     nullcheck: ", op.usemissings)
     println(io, "   trimstrings: ", op.trimstrings)
     println(io, "   skiponerror: ", op.skiponerror)
     println(io, "          skip: ", op.skip)

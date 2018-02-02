@@ -10,7 +10,7 @@ Parsing happens for Integrer, Float64, Date
 """
 function parsefield end
 
-missingon(source::FWF.Source) = (source.options.missingcheck)
+missingon(source::FWF.Source) = (source.options.usemissings)
 checkmissing(key::String, d::Dict{String, Missing}) = (haskey(d, key)) 
 
 function get_format(source::FWF.Source, col::Int) 
@@ -21,7 +21,7 @@ end
 # This main dispatch will always get called and dispatch to other methods
 # We are going to pre-load whole lines and cache the results in the Source.
 # Assume that every col==1 means load the next line
-function parsefield(source::FWF.Source, ::Type{T}, col::Int) where {T}
+function parsefield(source::FWF.Source, ::Type{T}, row::Int, col::Int) where {T}
     # Assume that every col==1 means load the next line
     if !((col == source.lastcol+1) || (col == 1 && Data.size(source.schema)[2] == source.lastcol))
         throw(FWF.ParsingException("Out of order access col=$col lastcol=$(source.lastcol)"))
@@ -33,17 +33,23 @@ function parsefield(source::FWF.Source, ::Type{T}, col::Int) where {T}
         return missing
     end
     
-    return parsefield(T, source.currentline[col], get_format(source, col))
+    return parsefield(T, source.options.usemissings, source.currentline[col], get_format(source, col))
 end
 
 # Batch of simple parsers to convert strings
-null_to_missing(x) = isnull(x) ? missing : unsafe_get(x)
-parsefield(::Type{Int}, string::String, format) = null_to_missing(tryparse(Int, string))
-parsefield(::Type{Float64}, string::String, format) = null_to_missing(tryparse(Float64, string))
-parsefield(::Type{String}, string::String, format) = string
-parsefield(::Type{Date}, string::String, format) = null_to_missing(tryparse(Date, string, format))
+null_to_missing(x, b, v) = isnull(x) ? usemissing_or_val(b, v) : unsafe_get(x)
+usemissing_or_val(b, v) = b ? missing : v
+parsefield(::Type{Int}, usemissing::Bool, string::String, format) = 
+    null_to_missing(tryparse(Int, string), usemissing, "")
+parsefield(::Type{Float64}, usemissing::Bool, string::String, format) = 
+    null_to_missing(tryparse(Float64, string), usemissing, 0.)
+parsefield(::Type{String}, usemissing::Bool, string::String, format) = string
+parsefield(::Type{Date}, usemissing::Bool, string::String, format) = 
+    null_to_missing(tryparse(Date, string, format), usemissing, Date())
+@inline parsefield(::Type{Union{Missing, T}}, usemissing::Bool, string::String, format) where {T} = 
+    (parsefield(T, usemissing, string, format))
 
 # Generic fallback
-function parsefield(T, string::String, format)
-    return null_to_missing(tryparse(T, string))
+function parsefield(T, usemissing::Bool, string::String, format)
+    return null_to_missing(tryparse(T, string), usemissing, nothing)
 end

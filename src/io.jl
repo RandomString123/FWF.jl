@@ -29,7 +29,8 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
     test = true
     line = ""
 
-    while test
+    while test 
+        eof(io) && (throw(ArgumentError("Unable to find next valid line")))
         line = readline(io)
         if (length(line) != rowlength)
             !skiponerror && throw(ParsingException("Invalid length line: "*string(length(line))))
@@ -67,7 +68,8 @@ Positional arguments:
 
 Keyword Arguments:
 
-* `missingcheck::Bool`: whether to check for missing values against the missings parameter; default = true
+* `usemissings::Bool`: whether to use missings, all fields will be unioned with Missing; default = true
+                        if not set default values of 0, date() and "" will be used for missing values
 * `trimstrings::Bool`: trim whitespace from all strings; default = true
 * `skiponerror::Bool`: if an invalid length line is encountered will skip to the next; default = true
 * `use_mmap::Bool=true`: whether the underlying file will be mmapped or not while parsing; note that on Windows machines, the underlying file will not be "deletable" until Julia GC has run (can be run manually via `gc()`) due to the use of a finalizer when reading the file.

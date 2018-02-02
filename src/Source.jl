@@ -32,6 +32,11 @@ function fixed_countlines(io::IO)
     (b[1] == UInt8('\n')) ? l : l+1
 end
 
+function union_missing(m::Bool, t::Type) 
+    m ? (Union{Missing, t}) : (t)
+    
+end
+
 # Negative values will break these functions
 
 function row_calc(io::IO, rows::Int, skip::Int, header::Bool)
@@ -83,7 +88,7 @@ function Source(
     fullpath::Union{AbstractString, IO},
     columnwidths::Union{Vector{UnitRange{Int}}, Vector{Int}}
     ;
-    missingcheck::Bool=true,
+    usemissings::Bool=true,
     trimstrings::Bool=true,
     skiponerror::Bool=true,
     use_mmap::Bool=true,
@@ -169,17 +174,17 @@ function Source(
     # Type is set to String if types are not passed in
     # Otherwise iterate through copying types & creating date dictionary
     if isempty(types)
-        typelist = [String for i = 1:columns]
+        typelist = [union_missing(usemissings, String) for i = 1:columns]
     else
         length(types) != columns && throw(ArgumentError("Wrong number of types: "*string(length(types))))
-        typelist = Vector{DataType}(columns)
+        typelist = Vector{Type}(columns)
         for i in 1:length(types)
             if (isa(types[i], DateFormat))
-                typelist[i] = Date
+                typelist[i] = union_missing(usemissings, Date)
                 datedict[i] = types[i]
-            elseif (isa(types[i], DataType))
+            elseif (isa(types[i], Type))
                 !(types[i] in (Int, Float64, String)) && (throw(ArgumentError("Invalid Type: "*string(types[i]))))
-                typelist[i] = types[i]
+                typelist[i] = union_missing(usemissings, types[i])
             else
                throw(ArgumentError("Found type that is not a DateFormat or DataType")) 
             end
@@ -194,7 +199,7 @@ function Source(
     end
 
     sch = Data.Schema(typelist, headerlist, ifelse(rows < 0, missing, rows))
-    opt = Options(missingcheck=missingcheck, trimstrings=trimstrings, 
+    opt = Options(usemissings=usemissings, trimstrings=trimstrings, 
                     skiponerror=skiponerror, skip=skip, missingvals=missingdict, 
                     dateformats = datedict,
                     columnrange=rangewidths)
@@ -208,7 +213,7 @@ Data.schema(source::FWF.Source) = source.schema
 Data.accesspattern(::Type{<:FWF.Source}) = Data.Sequential
 @inline Data.isdone(io::FWF.Source, row, col, rows, cols) = eof(io.io) || (!ismissing(rows) && row > rows)
 @inline Data.isdone(io::Source, row, col) = Data.isdone(io, row, col, size(io.schema)...)
-Data.streamtype(::Type{<:FWF.Source}, ::Type{Data.Column}) = true
-#@inline Data.streamfrom(source::FWF.Source, ::Type{Data.Field}, ::Type{T}, row, col::Int) where {T} = FWF.parsefield(source.io, T, source.options, row, col)
-Data.streamfrom(source::FWF.Source, ::Type{Data.Column}, ::Type{T}, col::Int) where {T} = FWF.parsefield(source, T, col)
+Data.streamtype(::Type{<:FWF.Source}, ::Type{Data.Field}) = true
+@inline Data.streamfrom(source::FWF.Source, ::Type{Data.Field}, ::Type{T}, row, col::Int) where {T} = FWF.parsefield(source, T, row, col)
+#Data.streamfrom(source::FWF.Source, ::Type{Data.Column}, ::Type{T}, col::Int) where {T} = FWF.parsefield(source, T, col)
 Data.reference(source::FWF.Source) = source.io.data
