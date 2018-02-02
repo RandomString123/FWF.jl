@@ -28,17 +28,17 @@ file = joinpath(dir,"testfile.txt")
     @test Data.header(tmp.schema)[1] == "abcd"
     @test Data.header(tmp.schema)[2] == "Column2"
     @test Data.header(tmp.schema)[3] == "10102017"
-    @test Data.types(tmp.schema)[1] == String
-    @test Data.types(tmp.schema)[2] == String
-    @test Data.types(tmp.schema)[3] == String
+    @test Data.types(tmp.schema)[1] == Union{Missing, String}
+    @test Data.types(tmp.schema)[2] == Union{Missing, String}
+    @test Data.types(tmp.schema)[3] == Union{Missing, String}
     tmp = FWF.Source(file, [4,4,8], types=[String, Int, Float64])
-    @test Data.types(tmp.schema)[1] == String
-    @test Data.types(tmp.schema)[2] == Int64
-    @test Data.types(tmp.schema)[3] == Float64
+    @test Data.types(tmp.schema)[1] == Union{Missing, String}
+    @test Data.types(tmp.schema)[2] == Union{Missing, Int64}
+    @test Data.types(tmp.schema)[3] == Union{Missing, Float64}
     tmp = FWF.Source(file, [4,4,8], types=[String, Int, DateFormat("mmddyyyy")], missings=["NA","***"])
-    @test Data.types(tmp.schema)[1] == String
-    @test Data.types(tmp.schema)[2] == Int64
-    @test Data.types(tmp.schema)[3] == Date
+    @test Data.types(tmp.schema)[1] == Union{Missing, String}
+    @test Data.types(tmp.schema)[2] == Union{Missing, Int64}
+    @test Data.types(tmp.schema)[3] == Union{Missing, Date}
     @test tmp.options.dateformats[3] == DateFormat("mmddyyyy")
     @test haskey(tmp.options.missingvals, "***")
     haskey(tmp.options.missingvals, "NA")

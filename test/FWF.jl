@@ -3,5 +3,5 @@
 # Ensure options objects get created
 @testset "Options Tests" begin
     x = FWF.Options()
-    @test x.missingcheck == true
+    @test x.usemissings == true
 end
