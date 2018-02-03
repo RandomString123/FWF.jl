@@ -18,6 +18,10 @@ fixed width data files and loading them into julia.  It has the features
 * Custom header specifiction
 * Start of file row skipping
 
+Items of note the package does not support, could could if desired
+* Column type detection
+* Sink from DataStreams.  (For all that is good and holy, please convert your data to a modern format)
+
 ## Installation
 
 The package is (Hopefully soon to be) registered in `METADATA.jl` and so can be installed with `Pkg.add`.
