@@ -18,7 +18,7 @@ fixed width data files and loading them into julia.  It has the features
 * Custom header specifiction
 * Start of file row skipping
 
-Items of note the package does not support, could could if desired
+Items of note the package does not support, but could if desired
 * Column type detection
 * Sink from DataStreams.  (For all that is good and holy, please convert your data to a modern format)
 
