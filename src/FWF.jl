@@ -1,7 +1,13 @@
 __precompile__(true)
 module FWF
 
-using DataStreams, Missings, DataFrames, Dates
+@static if VERSION < v"0.7.0-DEV.2005"
+    using DataStreams, Missings, DataFrames
+else 
+    using DataStreams, Missings, DataFrames, Dates, Mmap
+end
+
+
 
 struct ParsingException <: Exception
     msg::String

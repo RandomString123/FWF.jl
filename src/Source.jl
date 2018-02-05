@@ -1,4 +1,3 @@
-using DataStreams
 """
 Implement the `Data.Source` interface in the `DataStreams.jl` package.
 
@@ -56,7 +55,11 @@ end
 
 
 function calculate_ranges(columnwidths::Union{Vector{UnitRange{Int}}, Vector{Int}})
-    rangewidths = Vector{UnitRange{Int}}(length(columnwidths))
+    @static if VERSION < v"0.7.0-DEV"
+        rangewidths = Vector{UnitRange{Int}}(length(columnwidths))
+    else
+        rangewidths = Vector{UnitRange{Int}}(uninitialized, length(columnwidths))
+    end
     if isa(columnwidths, Vector{Int})
         l = 0
         for i in eachindex(columnwidths)
@@ -177,7 +180,11 @@ function Source(
         typelist = [union_missing(usemissings, String) for i = 1:columns]
     else
         length(types) != columns && throw(ArgumentError("Wrong number of types: "*string(length(types))))
-        typelist = Vector{Type}(columns)
+        @static if VERSION < v"0.7.0-DEV"
+            typelist = Vector{Type}(columns)
+        else
+            typelist = Vector{Type}(uninitialized, columns)
+        end
         for i in 1:length(types)
             if (isa(types[i], DateFormat))
                 typelist[i] = union_missing(usemissings, Date)

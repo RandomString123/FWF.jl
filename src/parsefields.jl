@@ -37,7 +37,7 @@ function parsefield(source::FWF.Source, ::Type{T}, row::Int, col::Int) where {T}
 end
 
 # Batch of simple parsers to convert strings
-null_to_missing(x, b, v) = isnull(x) ? usemissing_or_val(b, v) : unsafe_get(x)
+null_to_missing(x, b, v) = x == nothing ? usemissing_or_val(b, v) : unsafe_get(x)
 usemissing_or_val(b, v) = b ? missing : v
 parsefield(::Type{Int}, usemissing::Bool, string::String, format) = 
     null_to_missing(tryparse(Int, string), usemissing, "")

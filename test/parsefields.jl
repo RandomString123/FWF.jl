@@ -8,6 +8,7 @@ file = joinpath(dir,"testfile.txt")
     @test FWF.get_format(tmp, 1) == nothing
     @test FWF.get_format(tmp, 3) == DateFormat("mmddyyyy")
     @test_throws FWF.ParsingException FWF.parsefield(tmp, Int, 1, 3)
+    tmp = FWF.Source(file, [4,4,8], types=[String, Int, DateFormat("mmddyyyy")], missings=["abcd","10112017"])
     @test ismissing(FWF.parsefield(tmp, String, 1, 1))
     @test FWF.parsefield(tmp, Int, 1, 2) == 1234
     @test FWF.parsefield(tmp, Date, 1, 3) == Date("2017-10-10")
