@@ -32,9 +32,9 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
     while test 
         eof(io) && (throw(ArgumentError("Unable to find next valid line")))
         line = readline(io)
-        if (length(line) != rowlength)
-            !skiponerror && throw(ParsingException("Invalid length line: "*string(length(line))))
-            skiponerror && println(STDOUT, "Invalid length line:", line)
+        if (sizeof(line) != rowlength)
+            !skiponerror && throw(ParsingException("Invalid length line: "*string(sizeof(line))))
+            skiponerror && println(STDOUT, "Invalid length line($(sizeof(line))):", line)
         else
             test = false
         end
