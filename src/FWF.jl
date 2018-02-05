@@ -1,7 +1,7 @@
 __precompile__(true)
 module FWF
 
-using DataStreams, Missings, DataFrames
+using DataStreams, Missings, DataFrames, Dates
 
 struct ParsingException <: Exception
     msg::String
