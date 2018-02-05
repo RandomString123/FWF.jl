@@ -40,7 +40,7 @@ end
 # Negative values will break these functions
 
 function row_calc(io::IO, rows::Int, skip::Int, header::Bool)
-    return row_calc(io, rows, skip) - (header?1:0)
+    return row_calc(io, rows, skip) - (header ? 1 : 0)
 end
 
 function row_calc(io::IO, rows::Int, skip::Int, header::T) where {T}
