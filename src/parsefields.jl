@@ -36,19 +36,23 @@ function parsefield(source::FWF.Source, ::Type{T}, row::Int, col::Int) where {T}
     return parsefield(T, source.options.usemissings, source.currentline[col], get_format(source, col))
 end
 
-# Batch of simple parsers to convert strings
-null_to_missing(x, b, v) = x == nothing ? usemissing_or_val(b, v) : x
-usemissing_or_val(b, v) = b ? missing : v
-parsefield(::Type{Int}, usemissing::Bool, string::String, format) = 
-    null_to_missing(tryparse(Int, string), usemissing, "")
-parsefield(::Type{Float64}, usemissing::Bool, string::String, format) = 
-    null_to_missing(tryparse(Float64, string), usemissing, 0.)
-parsefield(::Type{String}, usemissing::Bool, string::String, format) = string
-parsefield(::Type{Date}, usemissing::Bool, string::String, format) = 
-    null_to_missing(tryparse(Date, string, format), usemissing, Date())
-@inline parsefield(::Type{Union{Missing, T}}, usemissing::Bool, string::String, format) where {T} = 
-    (parsefield(T, usemissing, string, format))
-@inline parsefield(::Type{Missing}, usemissing::Bool, string::String, format) = (missing)
+    # Batch of simple parsers to convert strings
+    @static if VERSION < v"0.7.0-DEV"
+        null_to_missing(x, b, v) = x == nothing ? usemissing_or_val(b, v) : x
+    else
+        null_to_missing(x, b, v) = is_null(x) ? usemissing_or_val(b, v,) : unsafe_get(x)
+    end
+    usemissing_or_val(b, v) = b ? missing : v
+    parsefield(::Type{Int}, usemissing::Bool, string::String, format) = 
+        null_to_missing(tryparse(Int, string), usemissing, "")
+    parsefield(::Type{Float64}, usemissing::Bool, string::String, format) = 
+        null_to_missing(tryparse(Float64, string), usemissing, 0.)
+    parsefield(::Type{String}, usemissing::Bool, string::String, format) = string
+    parsefield(::Type{Date}, usemissing::Bool, string::String, format) = 
+        null_to_missing(tryparse(Date, string, format), usemissing, Date())
+    @inline parsefield(::Type{Union{Missing, T}}, usemissing::Bool, string::String, format) where {T} = 
+        (parsefield(T, usemissing, string, format))
+    @inline parsefield(::Type{Missing}, usemissing::Bool, string::String, format) = (missing)
 # Generic fallback
 function parsefield(T, usemissing::Bool, string::String, format)
     return null_to_missing(tryparse(T, string), usemissing, nothing)
