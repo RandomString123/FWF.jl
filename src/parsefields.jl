@@ -37,10 +37,10 @@ function parsefield(source::FWF.Source, ::Type{T}, row::Int, col::Int) where {T}
 end
 
     # Batch of simple parsers to convert strings
-    @static if VERSION < v"0.7.0-DEV"
+    @static if VERSION >= v"0.7.0-DEV"
         null_to_missing(x, b, v) = x == nothing ? usemissing_or_val(b, v) : x
     else
-        null_to_missing(x, b, v) = is_null(x) ? usemissing_or_val(b, v,) : unsafe_get(x)
+        null_to_missing(x, b, v) = isnull(x) ? usemissing_or_val(b, v)  : unsafe_get(x)
     end
     usemissing_or_val(b, v) = b ? missing : v
     parsefield(::Type{Int}, usemissing::Bool, string::String, format) = 
