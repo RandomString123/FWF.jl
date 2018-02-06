@@ -25,6 +25,20 @@ file2 = joinpath(dir,"sal.txt")
     @test FWF.readsplitline!(s, tmp)[1] == "aaaa"
     @test_throws FWF.ParsingException FWF.readsplitline!(s, tmp)
     @test FWF.readsplitline!(s, tmp)[1] == "cccc"
+    
+    #ensure utf 8 doesn't mess us up
+    b = """
+    abcd
+    \u263ae
+    fghi
+    """
+    tmp = FWF.Source(IOBuffer(b),[4])
+    @test FWF.readsplitline!(s, tmp)[1] == "abcd"
+    @test FWF.readsplitline!(s, tmp)[1] == "\u263ae"
+    @test FWF.readsplitline!(s, tmp)[1] == "fghi"
+    @test_throws ArgumentError FWF.readsplitline!(s, tmp)[1]
+
+
 end
 
 @testset "FWF.read Testing" begin
