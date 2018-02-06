@@ -1,6 +1,36 @@
 file = joinpath(dir,"testfile.txt")
 file2 = joinpath(dir,"sal.txt")
 
+@testset "Line Count Testing" begin
+    # Malformed line
+    ml = "aaaa\nbbb\ncccc\n"
+    #No Ending NL
+    nonl = "aaaa\nbbbb\ncccc"
+    #Extra junk at end
+    extra = "aaaa\nbbbb\ncccc\ndd"
+    #Carrige Retruns
+    cr = "aaaa\r\nbbbb\r\ncccc\r\n"
+    #Normal
+    b = "aaaa\nbbbb\ncccc\n"
+    # no data
+    nodata = ""
+    #test base.countlines for fix to counting so we can adjust code
+    @test countlines(IOBuffer(nonl)) == 2
+    @test countlines(IOBuffer(b)) == 3
+    @test FWF.mod_countlines(IOBuffer(nonl)) == 3
+    @test FWF.mod_countlines(IOBuffer(b)) == 3
+    @test FWF.mod_countlines(IOBuffer(" ")) == 1
+    @test FWF.mod_countlines(IOBuffer("")) == 0
+    @test_throws FWF.ParsingException FWF.row_countlines(IOBuffer(ml),4)
+    @test FWF.row_countlines(IOBuffer(ml),4, skiponerror=true) == (2, true)
+    @test FWF.row_countlines(IOBuffer(nonl),4) == (3,false)
+    @test_throws FWF.ParsingException FWF.row_countlines(IOBuffer(extra),4)
+    @test FWF.row_countlines(IOBuffer(extra),4, skiponerror=true) == (3, true)
+    @test FWF.row_countlines(IOBuffer(b),4, skiponerror=true) == (3, false)
+    @test FWF.row_countlines(IOBuffer(cr),4, skiponerror=true) == (3, false)
+    @test FWF.row_countlines(IOBuffer(nodata),4) == (0, false)
+end
+
 @testset "readsplitline! Testing" begin
     s = Vector{String}()
     tmp = FWF.Source(file, [4,4,8])
@@ -21,9 +51,11 @@ file2 = joinpath(dir,"sal.txt")
     tmp = FWF.Source(IOBuffer(b),[4])
     @test FWF.readsplitline!(s, tmp)[1] == "aaaa"
     @test FWF.readsplitline!(s, tmp)[1] == "cccc"
-    tmp = FWF.Source(IOBuffer(b),[4],skiponerror=false)
+    @test_throws FWF.ParsingException FWF.Source(IOBuffer(b),[4],skiponerror=false)
+    tmp = FWF.Source(IOBuffer(b),[4], skiponerror=true)
     @test FWF.readsplitline!(s, tmp)[1] == "aaaa"
-    @test_throws FWF.ParsingException FWF.readsplitline!(s, tmp)
+    @test tmp.schema.rows == 2
+    #@test_throws FWF.ParsingException FWF.readsplitline!(s, tmp)
     @test FWF.readsplitline!(s, tmp)[1] == "cccc"
     
     #ensure utf 8 doesn't mess us up
@@ -53,7 +85,7 @@ end
     naValues = vcat(strrep("*", 1:23), strrep("#", 1:23), "NAME WITHHELD BY AGENCY", "NAME WITHHELD BY OPM", "NAME UNKNOWN", "UNSP", "<NA>", "000000", "999999", "")
 
     #    ~FieldName,~Length,~Type,
-    format = DataFrame(["PSEUDO-ID" 9 Int;
+    format = DataFrame(["PSEUDO_ID" 9 Int;
     "EMPLOYEE_NAME" 23 Missing;
     "FILE_DATE" 8  DateFormat("yyyymmdd");
     "AGENCY" 2 String;

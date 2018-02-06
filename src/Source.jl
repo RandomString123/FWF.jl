@@ -10,6 +10,7 @@ mutable struct Source{I} <: Data.Source
     datapos::Int # the position in the IOBuffer where the rows of data begins
     currentline::Vector{String}
     lastcol::Int
+    malformed::Bool # file is malformed so slow parsing
 end
 
 function Base.show(io::IO, f::Source)
@@ -21,16 +22,6 @@ function Base.show(io::IO, f::Source)
     show(io, f.schema)
 end
 
-# countlines only counts newlines not number of lines in the file.
-# Quick fix to ensure last lines of data are counted.
-# A line is anything except \n in the previous position
-function fixed_countlines(io::IO) 
-    b=[UInt8(0)]::Vector{UInt8}
-    l = countlines(io)
-    readbytes!(skip(io, -1), b, 1)
-    (b[1] == UInt8('\n')) ? l : l+1
-end
-
 function union_missing(m::Bool, t::Type) 
     m ? (Union{Missing, t}) : (t)
     
@@ -38,17 +29,16 @@ end
 
 # Negative values will break these functions
 
-function row_calc(io::IO, rows::Int, skip::Int, header::Bool)
-    return row_calc(io, rows, skip) - (header ? 1 : 0)
+function row_calc(lines::Int, rows::Int, skip::Int, header::Bool)
+    return row_calc(lines, rows, skip) - (header ? 1 : 0)
 end
 
-function row_calc(io::IO, rows::Int, skip::Int, header::T) where {T}
-    return row_calc(io, rows, skip)
+function row_calc(lines::Int, rows::Int, skip::Int, header::T) where {T}
+    return row_calc(lines, rows, skip)
 end
 
-function row_calc(io::IO, rows::Int, skip::Int)
+function row_calc(lines::Int, rows::Int, skip::Int)
     # rows to process, subtract skip and header if they exist
-    lines = fixed_countlines(io)
     rows = rows <= 0 ?  lines : ( (lines < rows) ? (lines) : (rows))
     return skip > 1 ? rows - skip : rows
 end
@@ -126,10 +116,18 @@ function Source(
         fs = filesize(fullpath)
     end
 
+    # Number of columns = # of widths
+    isempty(columnwidths) && throw(ArgumentError("No column widths provided"))
+    columns = length(columnwidths)
+
+    rangewidths = calculate_ranges(columnwidths)
+    rowlength = last(last(rangewidths))
+        
     # Starting position
     startpos = position(source)
     # rows to process, subtract skip and header if they exist
-    rows = row_calc(source, rows,skip, header)
+    lines, malformed =  row_countlines(source, rowlength, skiponerror=skiponerror)
+    rows = row_calc(lines, rows,skip, header)
     rows < 0 && (throw(ArgumentError("More skips than rows available")))
     # Go back to start
     seek(source, startpos)
@@ -140,13 +138,6 @@ function Source(
          read(source, UInt8) == 0xbb || seek(source, startpos)
          read(source, UInt8) == 0xbf || seek(source, startpos)
     end
-
-    # Number of columns = # of widths
-    isempty(columnwidths) && throw(ArgumentError("No column widths provided"))
-    columns = length(columnwidths)
-
-    rangewidths = calculate_ranges(columnwidths)
-    rowlength = last(last(rangewidths))
 
     # reposition iobuffer
     tmp = skip
@@ -210,7 +201,7 @@ function Source(
                     skiponerror=skiponerror, skip=skip, missingvals=missingdict, 
                     dateformats = datedict,
                     columnrange=rangewidths)
-    return Source(sch, opt, source, string(fullpath), datapos, Vector{String}(), 0)
+    return Source(sch, opt, source, string(fullpath), datapos, Vector{String}(), 0, malformed)
 end
 
 # needed? construct a new Source from a Sink

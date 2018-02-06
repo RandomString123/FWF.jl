@@ -1,3 +1,63 @@
+
+const NL = UInt8('\n')
+const CR = UInt8('\r')
+
+# Seek every len characters and ensure it is a \n
+# Test last line of file to see if it is len bytes
+# Make no assumptions becuase there could be malformed lines
+# If file does not conform to above format there is a malformed
+# line somewhere.  flag it for return.
+function row_countlines(io::IO, len::Int; skiponerror=false)
+    rows = 0
+    line = 0
+    malformed = false
+    # EOL detection, if we don't have an EoL doesn't matter
+    start_pos = position(io)
+    seek(io, start_pos+len)
+    eolpad = ((eof(io) || (Base.read(io, UInt8) != CR))) ? 0 : 1
+    seek(io, start_pos)
+    done = false
+    while !done
+        line += 1
+        # Ensure enough bites
+        if nb_available(io) >= len
+            mark(io)
+            skip(io, len + eolpad)
+            rows += 1
+        elseif nb_available(io) != 0  #!eof
+            !skiponerror && throw(FWF.ParsingException("Malformed last line($line)"))
+            println(STDERR, "Handling malformed last line($line)")
+            malformed = true
+            seekend(io)
+        end
+        #Test for eof / missing newline
+        if eof(io)
+            done = true
+        elseif (Base.read(io, UInt8) != NL)
+            !skiponerror && throw(FWF.ParsingException("Malformed line($line)"))
+            println(STDERR, "Handling malformed line($line)")
+            malformed = true
+            reset(io)
+            #Most likely not most efficient way
+            while (Base.read(io, UInt8) != NL) && !eof(io)
+            end
+            #eof(io) && skip(io, -1) # Move back so we are on NL again 
+            rows -= 1 # erase line we thought we found
+        end
+    end
+    return (rows, malformed)
+end
+
+# version of countlines() that checks last line for non-empty.
+function mod_countlines(io::IO) 
+    b=[UInt8(0)]::Vector{UInt8}
+    eof(io) && return 0
+    l = countlines(io)
+    readbytes!(skip(io, -1), b, 1)
+    (b[1] == NL) ? l : l+1
+end
+
+
 """
     FWF.readsplitline!(vals::Vector{String}, source::FWF.Source)
     FWF.readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool, skiponerror::Bool)
