@@ -60,7 +60,8 @@ function parsecol(source::FWF.Source, ::Type{T}, col::Int) where {T}
     for line in 1:dim_r
         seek(io, source.datapos + calc_offset(line, len_r, first(source.options.columnrange[col]), source.eolpad))
         readbytes!(io, buf, len_c)
-        v[line] = parsefield(T, source.options.usemissings, String(buf), get_format(source, col))
+        v[line] = parsefield(T, source.options.usemissings, 
+                        source.options.trimstrings ? strip(String(buf)) : String(buf), get_format(source, col))
     end
     return v
 end
