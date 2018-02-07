@@ -24,8 +24,7 @@ function Base.show(io::IO, f::Source)
 end
 
 function union_missing(m::Bool, t::Type) 
-    m ? (Union{Missing, t}) : (t)
-    
+    m ? (Union{t, Missing}) : (t)  
 end
 
 # Negative values will break these functions
