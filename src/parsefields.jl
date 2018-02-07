@@ -45,7 +45,7 @@ end
 # This main dispatch will get called for column based parsing and dispatch to other methods
 # This will allocate a vector to store a whole column of data and then parse a whole column
 # at once out of the file by using row offsets.
-# Assuming it is safe to use Data.rows(source.schema) as we should always populate it.
+# Assuming it is safe to use Data.size(source.schema) as we should always populate it.
 # For now putting IO code here until I can figure out how to break it out into single field parsing...
 # Pretty sure I can do that eventually.
 function parsecol(source::FWF.Source, ::Type{T}, col::Int) where {T}
@@ -56,12 +56,18 @@ function parsecol(source::FWF.Source, ::Type{T}, col::Int) where {T}
     io = source.io
     v = Vector{T}(dim_r)
     buf = Vector{UInt8}(len_c)
+    s = ""
     seek(io, source.datapos) # go to start, read a column
     for line in 1:dim_r
         seek(io, source.datapos + calc_offset(line, len_r, first(source.options.columnrange[col]), source.eolpad))
         readbytes!(io, buf, len_c)
-        v[line] = parsefield(T, source.options.usemissings, 
-                        source.options.trimstrings ? strip(String(buf)) : String(buf), get_format(source, col))
+        s = source.options.trimstrings ? strip(String(buf)) : String(buf)
+        if missingon(source) && checkmissing(s, source.options.missingvals)
+            v[line] = missing
+        else
+            v[line] = parsefield(T, source.options.usemissings, 
+                        s, get_format(source, col))
+        end
     end
     return v
 end

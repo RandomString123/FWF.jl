@@ -22,13 +22,13 @@ file2 = joinpath(dir,"sal.txt")
     @test FWF.mod_countlines(IOBuffer(" ")) == 1
     @test FWF.mod_countlines(IOBuffer("")) == 0
     @test_throws FWF.ParsingException FWF.row_countlines(IOBuffer(ml),4)
-    @test FWF.row_countlines(IOBuffer(ml),4, skiponerror=true) == (2, true)
-    @test FWF.row_countlines(IOBuffer(nonl),4) == (3,false)
+    @test FWF.row_countlines(IOBuffer(ml),4, skiponerror=true) == (2, true, 0)
+    @test FWF.row_countlines(IOBuffer(nonl),4) == (3,false, 0)
     @test_throws FWF.ParsingException FWF.row_countlines(IOBuffer(extra),4)
-    @test FWF.row_countlines(IOBuffer(extra),4, skiponerror=true) == (3, true)
-    @test FWF.row_countlines(IOBuffer(b),4, skiponerror=true) == (3, false)
-    @test FWF.row_countlines(IOBuffer(cr),4, skiponerror=true) == (3, false)
-    @test FWF.row_countlines(IOBuffer(nodata),4) == (0, false)
+    @test FWF.row_countlines(IOBuffer(extra),4, skiponerror=true) == (3, true, 0)
+    @test FWF.row_countlines(IOBuffer(b),4, skiponerror=true) == (3, false, 0)
+    @test FWF.row_countlines(IOBuffer(cr),4, skiponerror=true) == (3, false, 1)
+    @test FWF.row_countlines(IOBuffer(nodata),4) == (0, false, 0)
 end
 
 @testset "readsplitline! Testing" begin
