@@ -45,7 +45,7 @@ function row_countlines(io::IO, len::Int; skiponerror=false)
             rows -= 1 # erase line we thought we found
         end
     end
-    return (rows, malformed)
+    return (rows, malformed, eolpad)
 end
 
 # version of countlines() that checks last line for non-empty.

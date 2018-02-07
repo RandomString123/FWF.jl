@@ -11,6 +11,7 @@ mutable struct Source{I} <: Data.Source
     currentline::Vector{String}
     lastcol::Int
     malformed::Bool # file is malformed so slow parsing
+    eolpad::Int #Number of characters to pad at end of line (typically=0, 1 for CRLF files)
 end
 
 function Base.show(io::IO, f::Source)
@@ -126,7 +127,7 @@ function Source(
     # Starting position
     startpos = position(source)
     # rows to process, subtract skip and header if they exist
-    lines, malformed =  row_countlines(source, rowlength, skiponerror=skiponerror)
+    lines, malformed, eolpad =  row_countlines(source, rowlength, skiponerror=skiponerror)
     rows = row_calc(lines, rows,skip, header)
     rows < 0 && (throw(ArgumentError("More skips than rows available")))
     # Go back to start
@@ -201,7 +202,7 @@ function Source(
                     skiponerror=skiponerror, skip=skip, missingvals=missingdict, 
                     dateformats = datedict,
                     columnrange=rangewidths)
-    return Source(sch, opt, source, string(fullpath), datapos, Vector{String}(), 0, malformed)
+    return Source(sch, opt, source, string(fullpath), datapos, Vector{String}(), 0, malformed, eolpad)
 end
 
 # needed? construct a new Source from a Sink
@@ -211,7 +212,8 @@ Data.schema(source::FWF.Source) = source.schema
 Data.accesspattern(::Type{<:FWF.Source}) = Data.Sequential
 @inline Data.isdone(io::FWF.Source, row, col, rows, cols) = eof(io.io) || (!ismissing(rows) && row > rows)
 #@inline Data.isdone(io::Source, row, col) = Data.isdone(io, row, col, size(io.schema)...)
+Data.streamtype(::Type{<:FWF.Source}, ::Type{Data.Column}) = true
 Data.streamtype(::Type{<:FWF.Source}, ::Type{Data.Field}) = true
 @inline Data.streamfrom(source::FWF.Source, ::Type{Data.Field}, ::Type{T}, row, col::Int) where {T} = FWF.parsefield(source, T, row, col)
-#Data.streamfrom(source::FWF.Source, ::Type{Data.Column}, ::Type{T}, col::Int) where {T} = FWF.parsefield(source, T, col)
+Data.streamfrom(source::FWF.Source, ::Type{Data.Column}, ::Type{T}, col::Int) where {T} = FWF.parsecol(source, T, col)
 Data.reference(source::FWF.Source) = source.io.data
