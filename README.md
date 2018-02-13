@@ -11,8 +11,9 @@
 This package uses CSV.jl as an inspration and a code template for parsing
 fixed width data files and loading them into julia.  It has the features
 * Data field conversion into Int, Missing, Float64, and Date types
-* Line parsing and field creation base on Int or UnitRange based field widths.
-* Supports DataStream Source functionality to enable streaming into a DataFrame
+* Line parsing and field parsing based on Int or UnitRange field widths.
+* Column based parsing using UnitRange or Int field widths.
+* Supports DataStream Source functionality to enable streaming into a DataFrame...or anything that implements Sink.
 * Robust missing value detection
 * Skip malformed rows without terminating parsing
 * Custom header specifiction
