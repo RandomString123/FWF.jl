@@ -2,6 +2,9 @@
 
 *A simple fixed width file parser for julia*
 
+*maintained by @bkamins and @randomstring123*
+
+
 | **PackageEvaluator**                                            | **Build Status**                                                                                |
 :---------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
 | [![][pkg-0.6-img]][pkg-0.6-url] | [![][travis-img]][travis-url] [![][codecov-img]][codecov-url] |
