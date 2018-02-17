@@ -1,17 +1,6 @@
 file = joinpath(dir,"testfile.txt")
 file2 = joinpath(dir,"sal.txt")
 
-@testset "IO Functions Testing" begin
-    @test FWF.always_in_range(1, 1, 5) == 1
-    @test FWF.always_in_range(1, 0, 5) == 1
-    @test FWF.always_in_range(6, 1, 5) == 5
-    @test FWF.always_in_range(5, 1, 5) == 5
-    @test FWF.always_in_range(3, 1, 5) == 3
-    @test FWF.parsechar_line("α1x", [1:1,2:2,3:3]) == ["α","1","x"]
-    @test FWF.parsebyte_line("123", [1:1,2:2,3:3]) == ["1","2","3"]
-    @test_throws ArgumentError FWF.parsebyte_line("α1x", [1:1,2:2,3:3])
-end
-
 @testset "Line Count Testing" begin
     # Malformed line
     ml = "aaaa\nbbb\ncccc\n"
@@ -136,4 +125,13 @@ end
     @test tmp[2,2] == "2"
     @test tmp[3,2] == "∅"
     @test tmp[3,3] == "z"
+    tmp = FWF.read(IOBuffer("α1x\na2y\n∀∅z"), [2,1], unitbytes=false)
+    @test tmp[1,1] == "α1"
+    @test tmp[2,1] == "a2"
+    @test tmp[3,1] == "∀∅"
+    @test tmp[3,2] == "z"
+    tmp = FWF.read(IOBuffer("α1x\na2y\n∀∅z"), [3], unitbytes=false)
+    @test tmp[1,1] == "α1x"
+    @test tmp[2,1] == "a2y"
+    @test tmp[3,1] == "∀∅z"
 end

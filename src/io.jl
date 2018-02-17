@@ -76,67 +76,33 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
         end
     end
 
-    # Can we can use basic parsing
-    if(unitbytes || isascii(line))
-        our_lineparse = parsebyte_line
-    else
-        our_lineparse = parsechar_line
-    end
 
+    chr = 0
+    max = our_length(line)
+    ind = 0
+    str = ""
     # Break it up into chunks
-    cunked = our_lineparse(line, columnwidths)
-
-    # Map to return values...
-    for s in cunked
-        push!(vals, trim ? strip(s) : s)
+    for range in columnwidths
+        if unitbytes || isascii(line)
+            str = line[range]
+        else
+            # this code will be simpler when only Julia 0.7 or higher is supported
+            while chr < first(range)
+                ind = nextind(line, ind)
+                chr += 1
+            end
+            ind_start = ind
+            while chr < last(range)
+                ind = nextind(line, ind)
+                chr += 1
+            end
+            ind_stop = (chr > max)?max:ind
+            str = line[ind_start:ind_stop]
+        end
+        trim && (str = strip(str))
+        push!(vals, str)
     end
-    
     return vals
-end
-
-"""
-    parsebyte_line(line, widthsVector{UnitRange{Int}})
-
-    Will parse a line assuming range is based on byte indexing.
-"""
-
-function parsebyte_line(line, widths::Vector{UnitRange{Int}})
-    buf = Vector{SubString{String}}(length(widths))
-
-    for i in 1:length(widths)
-        buf[i] = SubString(line, first(widths[i]), last(widths[i]))
-    end
-
-    return buf
-end
-
-"""
-    parsechar_line(line, widths::Vector{UnitRange{Int}})
-
-    Will parse a line of text based on using each character (not byte) as an index value.
-"""
-# Left malformed testing, but we should never need it as I test before we get in here.
-function parsechar_line(line, widths::Vector{UnitRange{Int}})
-    buf = Vector{SubString{String}}(length(widths))
-    # Break string into indexes for each character
-    charindexes = [e for e in eachindex(line)]
-    e = s = min = 0
-    max = length(line)
-
-    for k in 1:length(widths)
-        s = always_in_range(first(widths[k]), min, max)
-        s = charindexes[s]
-        e = always_in_range(last(widths[k]), min, max)
-        e = charindexes[e]
-        buf[k] = SubString(line, s, e)
-    end
-    buf
-end
-
-function always_in_range(i, s, e) 
-    i < s && return s
-    i > e && return e
-    return i
 end
 
 """
