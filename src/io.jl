@@ -1,51 +1,20 @@
 
-const NL = UInt8('\n')
-const CR = UInt8('\r')
+"""
+    row_countlines(io::IO, len::Int; countbybytes=true, skiponerror=false)
 
-# Seek every len characters and ensure it is a \n
-# Test last line of file to see if it is len bytes
-# Make no assumptions becuase there could be malformed lines
-# If file does not conform to above format there is a malformed
-# line somewhere.  flag it for return.
-function row_countlines(io::IO, len::Int; skiponerror=false)
+    Count number of rows in a file, also deteremines EOL character/padding from first line.
+    Test last line of file to see if it is 0 or len bytes
+"""
+# To support bytes or characters this no longer does malformed testing
+function row_countlines(io::IO; skiponerror=false)
     rows = 0
-    line = 0
-    malformed = false
     # EOL detection, if we don't have an EoL doesn't matter
     start_pos = position(io)
-    seek(io, start_pos+len)
-    eolpad = ((eof(io) || (Base.read(io, UInt8) != CR))) ? 0 : 1
+    line = readline(io, chomp=false)
+    eolpad = (eof(io) || length(line) < 2 || (line[end-1] != '\r')) ? 0 : 1
     seek(io, start_pos)
-    done = false
-    while !done
-        line += 1
-        # Ensure enough bites
-        if nb_available(io) >= len
-            mark(io)
-            skip(io, len + eolpad)
-            rows += 1
-        elseif nb_available(io) != 0  #!eof
-            !skiponerror && throw(FWF.ParsingException("Malformed last line($line)"))
-            println(STDERR, "Handling malformed last line($line)")
-            malformed = true
-            seekend(io)
-        end
-        #Test for eof / missing newline
-        if eof(io)
-            done = true
-        elseif (Base.read(io, UInt8) != NL)
-            !skiponerror && throw(FWF.ParsingException("Malformed line($line)"))
-            println(STDERR, "Handling malformed line($line)")
-            malformed = true
-            reset(io)
-            #Most likely not most efficient way
-            while (Base.read(io, UInt8) != NL) && !eof(io)
-            end
-            #eof(io) && skip(io, -1) # Move back so we are on NL again 
-            rows -= 1 # erase line we thought we found
-        end
-    end
-    return (rows, malformed, eolpad)
+    rows = mod_countlines(io)
+    return (rows, eolpad)
 end
 
 # version of countlines() that checks last line for non-empty.
@@ -54,7 +23,7 @@ function mod_countlines(io::IO)
     eof(io) && return 0
     l = countlines(io)
     readbytes!(skip(io, -1), b, 1)
-    (b[1] == NL) ? l : l+1
+    (b[1] == UInt8('\n')) ? l : l+1
 end
 
 
@@ -75,15 +44,22 @@ The contents of `vals` are replaced.
 # * Break it into chunks based on column widths
 
 function readsplitline!(vals::Vector{String}, source::FWF.Source)
-    return readsplitline!(vals, source.io, source.options.columnrange, source.options.trimstrings, source.options.skiponerror)
+    return readsplitline!(vals, source.io, source.options.columnrange, 
+            source.options.trimstrings, source.options.unitbytes, source.options.skiponerror)
 end
 
-function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool=true, skiponerror=true) 
+function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool=true, unitbytes=true, skiponerror=true) 
     empty!(vals)
     # Parameter validation
     ((columnwidths == nothing) || (isempty(columnwidths))) && throw(ArgumentError("No column widths provided"))
     eof(io) && (throw(ArgumentError("IO not available")))
     
+    if(unitbytes)
+        our_length = sizeof
+    else
+        our_length = length
+    end
+
     rowlength = last(last(columnwidths))
     # Read a line and validate
     test = true
@@ -92,17 +68,37 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
     while test 
         eof(io) && (throw(ArgumentError("Unable to find next valid line")))
         line = readline(io)
-        if (sizeof(line) != rowlength)
-            !skiponerror && throw(ParsingException("Invalid length line: "*string(sizeof(line))))
-            skiponerror && println(STDOUT, "Invalid length line($(sizeof(line))):", line)
+        if (our_length(line) != rowlength)
+            !skiponerror && throw(ParsingException("Invalid length line: "*string(our_length(line))))
+            skiponerror && println(STDOUT, "Invalid length line($(our_length(line))):", line)
         else
             test = false
         end
     end
 
+
+    chr = 0
+    max = our_length(line)
+    ind = 0
+    str = ""
     # Break it up into chunks
     for range in columnwidths
-        str = line[range]
+        if unitbytes || isascii(line)
+            str = line[range]
+        else
+            # this code will be simpler when only Julia 0.7 or higher is supported
+            while chr < first(range)
+                ind = nextind(line, ind)
+                chr += 1
+            end
+            ind_start = ind
+            while chr < last(range)
+                ind = nextind(line, ind)
+                chr += 1
+            end
+            ind_stop = (chr > max)?max:ind
+            str = line[ind_start:ind_stop]
+        end
         trim && (str = strip(str))
         push!(vals, str)
     end
