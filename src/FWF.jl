@@ -16,12 +16,14 @@ end
 """
 Configuration Settings for fixed width file parsing.
 
-  * `skip`: integer of the number of lines to skip; default `0`
-  * `trimstrings`: true if strings should be trimmed; default `true`
-  * `usemissings`: true if fields should be checked for null values; default `true`
-  * `missingvals`: Dictionary in form of String=>missing for values that equal missing
-  * `dateformats`: Dictionary in the form of Int=>DateFormat to specify date formats for a column
-  * `columnrange`: Vector of UnitRanges that specifcy the widths of each column.
+  * `skip`        : integer of the number of lines to skip; default `0`
+  * `trimstrings` : true if strings should be trimmed; default `true`
+  * `usemissings` : true if fields should be checked for null values; default `true`
+  * `skiponerror` : true if errors should not throw an exception; default `true`
+  * `countnybytes`: true if field parsing should happen by bytes, false for character based parsing; default `true` 
+  * `missingvals` : Dictionary in form of String=>missing for values that equal missing
+  * `dateformats` : Dictionary in the form of Int=>DateFormat to specify date formats for a column
+  * `columnrange` : Vector of UnitRanges that specifcy the widths of each column.
   * ``
 """
 
@@ -29,6 +31,7 @@ struct Options
     usemissings::Bool
     trimstrings::Bool
     skiponerror::Bool
+    countbybytes::Bool
     skip::Int
     missingvals::Dict{String, Missing}
     dateformats::Dict{Int, DateFormat}
@@ -36,11 +39,11 @@ struct Options
 end
 
  Options(;usemissings=true, 
-        trimstrings=true, skiponerror=true, skip=0, 
+        trimstrings=true, skiponerror=true, countbybytes=true, skip=0, 
         missingvals=Dict{String, Missing}(), 
         dateformats=Dict{Int, DateFormat}(),
         columnrange=Vector{UnitRange{Int}}()) =
-    Options(usemissings, trimstrings, skiponerror, skip, missingvals, 
+    Options(usemissings, trimstrings, skiponerror, countbybytes, skip, missingvals, 
             dateformats, columnrange)
 
 function Base.show(io::IO, op::Options)
@@ -48,6 +51,7 @@ function Base.show(io::IO, op::Options)
     println(io, "     nullcheck: ", op.usemissings)
     println(io, "   trimstrings: ", op.trimstrings)
     println(io, "   skiponerror: ", op.skiponerror)
+    println(io, "  countbybytes: ", op.countbybytes)
     println(io, "          skip: ", op.skip)
     println(io, "   missingvals:", )
     show(io, op.missingvals)
