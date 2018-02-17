@@ -89,7 +89,7 @@ end
 
     #    ~FieldName,~Length,~Type,
     format = DataFrame(["PSEUDO_ID" 9 Int;
-    "EMPLOYEE_NAME" 23 Missing;
+    "EMPLOYEE_NAME" 23 String;
     "FILE_DATE" 8  DateFormat("yyyymmdd");
     "AGENCY" 2 String;
     "SUB_AGENCY" 2 String;
@@ -117,6 +117,7 @@ end
     @test tmp[15333,13] == "P"
     @test tmp[153242,16] == "15"
     @test tmp[9999,4] == "AG"
+    @test tmp[36, 2] == "NAME WITHHELD BY ÄĜË"
 
     # Simple UTF-8 test
     tmp = FWF.read(IOBuffer("α1x\na2y\n∀∅z"), [1,1,1], unitbytes=false)
