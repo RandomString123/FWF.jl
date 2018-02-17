@@ -45,16 +45,16 @@ The contents of `vals` are replaced.
 
 function readsplitline!(vals::Vector{String}, source::FWF.Source)
     return readsplitline!(vals, source.io, source.options.columnrange, 
-            source.options.trimstrings, source.options.countbybytes, source.options.skiponerror)
+            source.options.trimstrings, source.options.unitbytes, source.options.skiponerror)
 end
 
-function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool=true, countbybytes=true, skiponerror=true) 
+function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool=true, unitbytes=true, skiponerror=true) 
     empty!(vals)
     # Parameter validation
     ((columnwidths == nothing) || (isempty(columnwidths))) && throw(ArgumentError("No column widths provided"))
     eof(io) && (throw(ArgumentError("IO not available")))
     
-    if(countbybytes)
+    if(unitbytes)
         our_length = sizeof
     else
         our_length = length
@@ -77,7 +77,7 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
     end
 
     # Can we can use basic parsing
-    if(countbybytes || isascii(line))
+    if(unitbytes || isascii(line))
         our_lineparse = parsebyte_line
     else
         our_lineparse = parsechar_line

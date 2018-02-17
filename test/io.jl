@@ -130,7 +130,7 @@ end
     @test tmp[9999,4] == "AG"
 
     # Simple UTF-8 test
-    tmp = FWF.read(IOBuffer("α1x\na2y\n∀∅z"), [1,1,1], countbybytes=false)
+    tmp = FWF.read(IOBuffer("α1x\na2y\n∀∅z"), [1,1,1], unitbytes=false)
     @test tmp[1,1] == "α"
     @test tmp[1,2] == "1"
     @test tmp[2,2] == "2"

@@ -84,7 +84,7 @@ function Source(
     usemissings::Bool=true,
     trimstrings::Bool=true,
     skiponerror::Bool=true,
-    countbybytes::Bool=true,
+    unitbytes::Bool=true,
     use_mmap::Bool=true,
     skip::Int=0,
     rows::Int=0,
@@ -200,7 +200,7 @@ function Source(
 
     sch = Data.Schema(typelist, headerlist, ifelse(rows < 0, missing, rows))
     opt = Options(usemissings=usemissings, trimstrings=trimstrings, 
-                    skiponerror=skiponerror, countbybytes=countbybytes, skip=skip, missingvals=missingdict, 
+                    skiponerror=skiponerror, unitbytes=unitbytes, skip=skip, missingvals=missingdict, 
                     dateformats = datedict,
                     columnrange=rangewidths)
     return Source(sch, opt, source, string(fullpath), datapos, Vector{String}(), 0, malformed, eolpad)

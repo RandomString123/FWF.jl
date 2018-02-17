@@ -31,7 +31,7 @@ struct Options
     usemissings::Bool
     trimstrings::Bool
     skiponerror::Bool
-    countbybytes::Bool
+    unitbytes::Bool
     skip::Int
     missingvals::Dict{String, Missing}
     dateformats::Dict{Int, DateFormat}
@@ -39,11 +39,11 @@ struct Options
 end
 
  Options(;usemissings=true, 
-        trimstrings=true, skiponerror=true, countbybytes=true, skip=0, 
+        trimstrings=true, skiponerror=true, unitbytes=true, skip=0, 
         missingvals=Dict{String, Missing}(), 
         dateformats=Dict{Int, DateFormat}(),
         columnrange=Vector{UnitRange{Int}}()) =
-    Options(usemissings, trimstrings, skiponerror, countbybytes, skip, missingvals, 
+    Options(usemissings, trimstrings, skiponerror, unitbytes, skip, missingvals, 
             dateformats, columnrange)
 
 function Base.show(io::IO, op::Options)
