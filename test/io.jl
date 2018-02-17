@@ -21,14 +21,16 @@ file2 = joinpath(dir,"sal.txt")
     @test FWF.mod_countlines(IOBuffer(b)) == 3
     @test FWF.mod_countlines(IOBuffer(" ")) == 1
     @test FWF.mod_countlines(IOBuffer("")) == 0
-    @test_throws FWF.ParsingException FWF.row_countlines(IOBuffer(ml),4)
-    @test FWF.row_countlines(IOBuffer(ml),4, skiponerror=true) == (2, true, 0)
-    @test FWF.row_countlines(IOBuffer(nonl),4) == (3,false, 0)
-    @test_throws FWF.ParsingException FWF.row_countlines(IOBuffer(extra),4)
-    @test FWF.row_countlines(IOBuffer(extra),4, skiponerror=true) == (3, true, 0)
-    @test FWF.row_countlines(IOBuffer(b),4, skiponerror=true) == (3, false, 0)
-    @test FWF.row_countlines(IOBuffer(cr),4, skiponerror=true) == (3, false, 1)
-    @test FWF.row_countlines(IOBuffer(nodata),4) == (0, false, 0)
+    # Not error until malformed is back
+    #@test_throws FWF.ParsingException FWF.row_countlines(IOBuffer(ml))
+    @test FWF.row_countlines(IOBuffer(ml),skiponerror=true) == (3, 0)
+    @test FWF.row_countlines(IOBuffer(nonl)) == (3, 0)
+    # Used to be an error condition not now.
+    #@test_throws FWF.ParsingException FWF.row_countlines(IOBuffer(extra))
+    @test FWF.row_countlines(IOBuffer(extra),skiponerror=true) == (4, 0)
+    @test FWF.row_countlines(IOBuffer(b),skiponerror=true) == (3, 0)
+    @test FWF.row_countlines(IOBuffer(cr),skiponerror=true) == (3, 1)
+    @test FWF.row_countlines(IOBuffer(nodata)) == (0, 0)
 end
 
 @testset "readsplitline! Testing" begin
@@ -51,10 +53,11 @@ end
     tmp = FWF.Source(IOBuffer(b),[4])
     @test FWF.readsplitline!(s, tmp)[1] == "aaaa"
     @test FWF.readsplitline!(s, tmp)[1] == "cccc"
-    @test_throws FWF.ParsingException FWF.Source(IOBuffer(b),[4],skiponerror=false)
+    # Not error until malformed is back
+    #@test_throws FWF.ParsingException FWF.Source(IOBuffer(b),[4],skiponerror=false)
     tmp = FWF.Source(IOBuffer(b),[4], skiponerror=true)
     @test FWF.readsplitline!(s, tmp)[1] == "aaaa"
-    @test tmp.schema.rows == 2
+    @test tmp.schema.rows == 3
     #@test_throws FWF.ParsingException FWF.readsplitline!(s, tmp)
     @test FWF.readsplitline!(s, tmp)[1] == "cccc"
     
@@ -114,4 +117,7 @@ end
     @test tmp[15333,13] == "P"
     @test tmp[153242,16] == "15"
     @test tmp[9999,4] == "AG"
+
+    # Simple UTF-8 test
+    tmp = FWF.read(IOBuffer("α1x\na2y\n∀∅z"), [1,1,1], countbybytes=false)
 end

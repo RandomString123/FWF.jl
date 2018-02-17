@@ -49,13 +49,13 @@ end
     abc
     def"""
 
-    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b),3)[1], 0, 0, true) == 1
-    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b),3)[1], 0, 0, false) == 2
-    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b),3)[1], 0, 0) == 2
-    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b),3)[1], 0, 2) == 0
-    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b),3)[1], 1, 0) == 1
-    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b),3)[1], -1, 0) == 2
-    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b),3)[1], 0, -1) == 2
+    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], 0, 0, true) == 1
+    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], 0, 0, false) == 2
+    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], 0, 0) == 2
+    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], 0, 2) == 0
+    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], 1, 0) == 1
+    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], -1, 0) == 2
+    @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], 0, -1) == 2
     #@test_throws ArgumentError FWF.row_calc(IOBuffer(b), 0, 3)
     #@test_throws ArgumentError FWF.row_calc(IOBuffer(b), 0, 2, true)
     

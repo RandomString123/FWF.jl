@@ -84,6 +84,7 @@ function Source(
     usemissings::Bool=true,
     trimstrings::Bool=true,
     skiponerror::Bool=true,
+    countbybytes::Bool=true,
     use_mmap::Bool=true,
     skip::Int=0,
     rows::Int=0,
@@ -97,6 +98,7 @@ function Source(
     headerlist = Vector{String}()
     missingdict = Dict{String, Missing}()
     rangewidths = Vector{UnitRange{Int}}()
+    malformed = false
 
     isa(fullpath, AbstractString) && (isfile(fullpath) || throw(ArgumentError("\"$fullpath\" is not a valid file")))
     
@@ -126,13 +128,13 @@ function Source(
     # Starting position
     startpos = position(source)
     # rows to process, subtract skip and header if they exist
-    lines, malformed, eolpad =  row_countlines(source, rowlength, skiponerror=skiponerror)
+    lines, eolpad =  row_countlines(source, skiponerror=skiponerror)
     rows = row_calc(lines, rows,skip, header)
     rows < 0 && (throw(ArgumentError("More skips than rows available")))
     # Go back to start
     seek(source, startpos)
 
-    # Don't think this is necessary, but just in case utf sneaks in...BOM character detection
+    # Don't think this is necessary, but just in case...BOM character detection
     if fs > 0 && Base.peek(source) == 0xef
          read(source, UInt8)
          read(source, UInt8) == 0xbb || seek(source, startpos)
@@ -198,7 +200,7 @@ function Source(
 
     sch = Data.Schema(typelist, headerlist, ifelse(rows < 0, missing, rows))
     opt = Options(usemissings=usemissings, trimstrings=trimstrings, 
-                    skiponerror=skiponerror, skip=skip, missingvals=missingdict, 
+                    skiponerror=skiponerror, countbybytes=countbybytes, skip=skip, missingvals=missingdict, 
                     dateformats = datedict,
                     columnrange=rangewidths)
     return Source(sch, opt, source, string(fullpath), datapos, Vector{String}(), 0, malformed, eolpad)
