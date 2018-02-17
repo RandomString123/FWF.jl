@@ -72,5 +72,4 @@ end
     @test tmp[2] == 2:5
     @test tmp[3] == 6:11
 
-
 end

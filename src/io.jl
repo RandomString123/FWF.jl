@@ -56,10 +56,8 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
     
     if(countbybytes)
         our_length = sizeof
-        our_lineparse = parsebyte_line
     else
         our_length = length
-        our_lineparse = parsechar_line
     end
 
     rowlength = last(last(columnwidths))
@@ -76,6 +74,13 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
         else
             test = false
         end
+    end
+
+    # Can we can use basic parsing
+    if(countbybytes || isascii(line))
+        our_lineparse = parsebyte_line
+    else
+        our_lineparse = parsechar_line
     end
 
     # Break it up into chunks
@@ -109,28 +114,29 @@ end
     parsechar_line(line, widths::Vector{UnitRange{Int}})
 
     Will parse a line of text based on using each character (not byte) as an index value.
-    Pulled from parsefwf_line and slightly modified to handle ranges.
 """
 # Left malformed testing, but we should never need it as I test before we get in here.
 function parsechar_line(line, widths::Vector{UnitRange{Int}})
     buf = Vector{SubString{String}}(length(widths))
-    i = 0
-    j = -1
-     malformed = false
-    e = endof(line)
+    # Break string into indexes for each character
+    charindexes = [e for e in eachindex(line)]
+    e = s = min = 0
+    max = length(line)
+
     for k in 1:length(widths)
-        w = widths[k]
-        i = nextind(line, first(w))
-        j = nextind(line, last(w))
-        if j > e
-            j = e
-            if k < length(widths)
-                malformed = true
-            end
-        end
-        buf[k] = SubString(line, i, j)
+        s = always_in_range(first(widths[k]), min, max)
+        s = charindexes[s]
+        e = always_in_range(last(widths[k]), min, max)
+        e = charindexes[e]
+        buf[k] = SubString(line, s, e)
     end
     buf
+end
+
+function always_in_range(i, s, e) 
+    i < s && return s
+    i > e && return e
+    return i
 end
 
 """
