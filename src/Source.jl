@@ -58,12 +58,13 @@ function calculate_ranges(columnwidths::Union{Vector{UnitRange{Int}}, Vector{Int
             l=last(rangewidths[i])
         end
     else
-        #Validate we have an unbroken range wile copying
+        #Validate the passed ranges
         first(first(columnwidths)) <= 0 && (throw(ArgumentError("Columns must start > 0")))
         for i in 1:length(columnwidths)
+            first(columnwidths[i]) ≤ last(columnwidths[i]) || throw(ArgumentError(string("Negative range ", columnwidths[i])))
             rangewidths[i] = columnwidths[i]
             i==1 && (continue)
-            (last(columnwidths[i-1])+1 != first(columnwidths[i])) && (throw(ArgumentError("Non-Continuous ranges "*string(columnwidths[i-1])*","*string(columnwidths[i])))) 
+            (last(columnwidths[i-1]) < first(columnwidths[i])) || (throw(ArgumentError("Non-increasing ranges "*string(columnwidths[i-1])*","*string(columnwidths[i]))))
         end
     end
     return rangewidths
@@ -123,8 +124,7 @@ function Source(
     columns = length(columnwidths)
 
     rangewidths = calculate_ranges(columnwidths)
-    rowlength = last(last(rangewidths))
-        
+
     # Starting position
     startpos = position(source)
     # rows to process, subtract skip and header if they exist

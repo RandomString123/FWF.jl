@@ -64,7 +64,8 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
     while test
         eof(io) && (throw(ArgumentError("Unable to find next valid line")))
         line = readline(io)
-        if (our_length(line) != rowlength)
+        # we do not care what is in the line beyond rowlength
+        if (our_length(line) < rowlength)
             !skiponerror && throw(ParsingException("Invalid length line: "*string(our_length(line))))
             skiponerror && println(STDOUT, "Invalid length line($(our_length(line))):", line)
         else
@@ -113,12 +114,17 @@ Positional arguments:
 
 * `fullpath`; can be a file name (string) or other `IO` instance
 * `columnwidths`; can be a vector of integers or consecutive unit ranges that represents the column widths
-                    examples: [4,4,8] or [1:4,5:8, 9:16]
-* `sink::Type{T}`; `DataFrame` by default, but may also be other `Data.Sink` types that support streaming via `Data.Field` interface; note that the method argument can be the *type* of `Data.Sink`, plus any required arguments the sink may need (`args...`).
-                    or an already constructed `sink` may be passed (2nd method above)
+  examples: [4,4,8] or [1:4,5:8, 9:16]; ranges may be discontinous, e.g. [1:2, 5:10].
+  Widths are interpreted either in bytes or characters as defined by `unitbytes` keyword argument
+  Each valid line in the file must have its width at least equal to width implied by passed `columnwidths`
+  (if it is wider it is silently ignored).
+* `sink::Type{T}`; `DataFrame` by default, but may also be other `Data.Sink` types that support streaming via
+  `Data.Field` interface; note that the method argument can be the *type* of `Data.Sink`, plus any required
+  arguments the sink may need (`args...`) or an already constructed `sink` may be passed (2nd method above)
 
 Keyword Arguments:
 
+* `unitbytes::Bool`: whether to treat field ranges in bytes or characters; default = true (bytes)
 * `usemissings::Bool`: whether to use missings, all fields will be unioned with Missing; default = true
                         if not set default values of 0, date() and "" will be used for missing values
 * `trimstrings::Bool`: trim whitespace from all strings; default = true
