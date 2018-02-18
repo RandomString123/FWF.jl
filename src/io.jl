@@ -48,24 +48,20 @@ function readsplitline!(vals::Vector{String}, source::FWF.Source)
             source.options.trimstrings, source.options.unitbytes, source.options.skiponerror)
 end
 
-function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool=true, unitbytes=true, skiponerror=true) 
+function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool=true, unitbytes=true, skiponerror=true)
     empty!(vals)
     # Parameter validation
     ((columnwidths == nothing) || (isempty(columnwidths))) && throw(ArgumentError("No column widths provided"))
     eof(io) && (throw(ArgumentError("IO not available")))
     
-    if(unitbytes)
-        our_length = sizeof
-    else
-        our_length = length
-    end
+    our_length = unitbytes ? sizeof : length
 
     rowlength = last(last(columnwidths))
     # Read a line and validate
     test = true
     line = ""
 
-    while test 
+    while test
         eof(io) && (throw(ArgumentError("Unable to find next valid line")))
         line = readline(io)
         if (our_length(line) != rowlength)
@@ -76,17 +72,17 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
         end
     end
 
-
     chr = 0
-    max = our_length(line)
     ind = 0
-    str = ""
     # Break it up into chunks
     for range in columnwidths
         if unitbytes || isascii(line)
-            str = line[range]
+            # Julia 0.7 is more strict about parsing string ranges
+            # below will fail if first(range) is not a valid index into line
+            # TODO: simplify when only Julia 0.7 or higher is supported
+            str = line[first(range):prevind(line, last(range)+1)]
         else
-            # this code will be simpler when only Julia 0.7 or higher is supported
+            # TODO: this code will be simpler when only Julia 0.7 or higher is supported
             while chr < first(range)
                 ind = nextind(line, ind)
                 chr += 1
@@ -96,11 +92,10 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
                 ind = nextind(line, ind)
                 chr += 1
             end
-            ind_stop = (chr > max)?max:ind
-            str = line[ind_start:ind_stop]
+            str = line[ind_start:ind] # we have checked above that ind is a valid index
         end
-        trim && (str = strip(str))
-        push!(vals, str)
+        # strip returns SubString in Julia 0.7 or higher
+        push!(vals, trim ? String(strip(str)) : str)
     end
     return vals
 end
