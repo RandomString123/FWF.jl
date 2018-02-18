@@ -62,7 +62,8 @@ end
     # Range building
     @test_throws ArgumentError FWF.calculate_ranges([-1,2,3])
     @test_throws ArgumentError FWF.calculate_ranges([-1:2])
-    @test_throws ArgumentError FWF.calculate_ranges([1:2, 4:5])
+    @test_throws ArgumentError FWF.calculate_ranges([1:2, 1:5])
+    @test_throws ArgumentError FWF.calculate_ranges([1:5, 6:5])
     tmp = FWF.calculate_ranges([1,4,6])
     @test tmp[1] == 1:1
     @test tmp[2] == 2:5

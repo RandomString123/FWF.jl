@@ -46,6 +46,43 @@ end
     @test s[2] == "5678"
     @test s[3] == "10112017"
     @test_throws ArgumentError FWF.readsplitline!(s, tmp)
+
+    tmp = FWF.Source(file, [4,4,4])
+    FWF.readsplitline!(s, tmp)
+    @test s[1] == "abcd"
+    @test s[2] == "1234"
+    @test s[3] == "1010"
+    @test_throws ArgumentError FWF.readsplitline!(s, tmp.io, Vector{UnitRange{Int}}())
+    FWF.readsplitline!(s, tmp)
+    @test s[1] == "efgh"
+    @test s[2] == "5678"
+    @test s[3] == "1011"
+    @test_throws ArgumentError FWF.readsplitline!(s, tmp)
+
+    tmp = FWF.Source(file, [1:4,5:8,9:16])
+    FWF.readsplitline!(s, tmp)
+    @test s[1] == "abcd"
+    @test s[2] == "1234"
+    @test s[3] == "10102017"
+    @test_throws ArgumentError FWF.readsplitline!(s, tmp.io, Vector{UnitRange{Int}}())
+    FWF.readsplitline!(s, tmp)
+    @test s[1] == "efgh"
+    @test s[2] == "5678"
+    @test s[3] == "10112017"
+    @test_throws ArgumentError FWF.readsplitline!(s, tmp)
+
+    tmp = FWF.Source(file, [1:2,5:6,9:10])
+    FWF.readsplitline!(s, tmp)
+    @test s[1] == "ab"
+    @test s[2] == "12"
+    @test s[3] == "10"
+    @test_throws ArgumentError FWF.readsplitline!(s, tmp.io, Vector{UnitRange{Int}}())
+    FWF.readsplitline!(s, tmp)
+    @test s[1] == "ef"
+    @test s[2] == "56"
+    @test s[3] == "10"
+    @test_throws ArgumentError FWF.readsplitline!(s, tmp)
+
     b="""
     aaaa
     bbb
