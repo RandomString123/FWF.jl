@@ -12,6 +12,7 @@ mutable struct Source{I} <: Data.Source
     lastcol::Int
     malformed::Bool # file is malformed so slow parsing
     eolpad::Int #Number of characters to pad at end of line (typically=0, 1 for CRLF files)
+    line_len::Int # first line length successfully parsed by readsplitline!
 end
 
 function Base.show(io::IO, f::Source)
@@ -148,11 +149,12 @@ function Source(
         tmp =- 1     
     end
     datapos = position(source)
+    line_len = -1
 
     # Figure out headers
     if isa(header, Bool) && header
         # first row is heders
-        FWF.readsplitline!(headerlist, source, rangewidths, true)
+        line_len = FWF.readsplitline!(headerlist, source, rangewidths, true)
         datapos = position(source)
         for i in eachindex(headerlist)
             length(headerlist[i]) < 1 && (headerlist[i] = "Column$i")
@@ -203,7 +205,7 @@ function Source(
                     skiponerror=skiponerror, unitbytes=unitbytes, skip=skip, missingvals=missingdict, 
                     dateformats = datedict,
                     columnrange=rangewidths)
-    return Source(sch, opt, source, string(fullpath), datapos, Vector{String}(), 0, malformed, eolpad)
+    return Source(sch, opt, source, string(fullpath), datapos, Vector{String}(), 0, malformed, eolpad, line_len)
 end
 
 # needed? construct a new Source from a Sink

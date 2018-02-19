@@ -33,7 +33,9 @@ function parsefield(source::FWF.Source, ::Type{T}, row::Int, col::Int) where {T}
         throw(FWF.ParsingException("Out of order access col=$col lastcol=$(source.lastcol)"))
     end
     source.lastcol = col
-    col == 1 && (readsplitline!(source.currentline, source))
+    if col == 1
+        readsplitline!(source.currentline, source)
+    end
     
     if missingon(source) && checkmissing(source.currentline[col], source.options.missingvals)
         return missing
