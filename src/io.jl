@@ -37,6 +37,7 @@ Fields are determined by the field widths stored in the `source` options or `col
 Fields will be trimed if `trim` is true
 Row or rows will be skipped if there is an error found if `skiponerror` is true
 The contents of `vals` are replaced.
+Returns length of line read in bytes or characters following `unitbytes` keyword argument.
 """
 # This function is pretty simple
 # * Read line of input from the source
@@ -44,8 +45,15 @@ The contents of `vals` are replaced.
 # * Break it into chunks based on column widths
 
 function readsplitline!(vals::Vector{String}, source::FWF.Source)
-    return readsplitline!(vals, source.io, source.options.columnrange, 
-            source.options.trimstrings, source.options.unitbytes, source.options.skiponerror)
+    line_len = readsplitline!(vals, source.io, source.options.columnrange,
+                              source.options.trimstrings, source.options.unitbytes,
+                              source.options.skiponerror)
+    if source.line_len == -1
+        source.line_len = line_len
+    elseif source.line_len != line_len
+        println(STDERR, "Inconsistent line lengths. Current $(line_len) and first valid length was $(source.line_len)")
+    end
+    return line_len
 end
 
 function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool=true, unitbytes=true, skiponerror=true)
@@ -60,14 +68,16 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
     # Read a line and validate
     test = true
     line = ""
+    line_len::Int = -1
 
     while test
         eof(io) && (throw(ArgumentError("Unable to find next valid line")))
         line = readline(io)
+        line_len = our_length(line)
         # we do not care what is in the line beyond rowlength
-        if (our_length(line) < rowlength)
+        if line_len < rowlength
             !skiponerror && throw(ParsingException("Invalid length line: "*string(our_length(line))))
-            skiponerror && println(STDOUT, "Invalid length line($(our_length(line))):", line)
+            skiponerror && println(STDERR, "Invalid length line($(our_length(line))):", line)
         else
             test = false
         end
@@ -98,7 +108,7 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
         # strip returns SubString in Julia 0.7 or higher
         push!(vals, trim ? String(strip(str)) : str)
     end
-    return vals
+    return line_len
 end
 
 """

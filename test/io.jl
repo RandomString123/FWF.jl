@@ -88,16 +88,43 @@ end
     bbb
     cccc"""
     tmp = FWF.Source(IOBuffer(b),[4])
-    @test FWF.readsplitline!(s, tmp)[1] == "aaaa"
-    @test FWF.readsplitline!(s, tmp)[1] == "cccc"
+    @test FWF.readsplitline!(s, tmp) == 4
+    @test s[1] == "aaaa"
+    @test FWF.readsplitline!(s, tmp) == 4
+    @test s[1] == "cccc"
     # Not error until malformed is back
     #@test_throws FWF.ParsingException FWF.Source(IOBuffer(b),[4],skiponerror=false)
     tmp = FWF.Source(IOBuffer(b),[4], skiponerror=true)
-    @test FWF.readsplitline!(s, tmp)[1] == "aaaa"
+    @test FWF.readsplitline!(s, tmp) == 4
+    @test s[1] == "aaaa"
     @test tmp.schema.rows == 3
     #@test_throws FWF.ParsingException FWF.readsplitline!(s, tmp)
-    @test FWF.readsplitline!(s, tmp)[1] == "cccc"
+    @test FWF.readsplitline!(s, tmp) == 4
+    @test s[1] == "cccc"
+
+    # test overlong line
+    b="""
+    aaaa
+    bbb
+    ccccc"""
+    tmp = FWF.Source(IOBuffer(b),[4])
+    @test FWF.readsplitline!(s, tmp) == 4
+    @test s[1] == "aaaa"
+    @test FWF.readsplitline!(s, tmp) == 5
+    @test s[1] == "cccc"
     
+
+    # test overlong line
+    b="""
+    aaaaa
+    bbb
+    cccc"""
+    tmp = FWF.Source(IOBuffer(b),[4])
+    @test FWF.readsplitline!(s, tmp) == 5
+    @test s[1] == "aaaa"
+    @test FWF.readsplitline!(s, tmp) == 4
+    @test s[1] == "cccc"
+
     #ensure utf 8 doesn't mess us up
     b = """
     abcd
@@ -105,12 +132,13 @@ end
     fghi
     """
     tmp = FWF.Source(IOBuffer(b),[4])
-    @test FWF.readsplitline!(s, tmp)[1] == "abcd"
-    @test FWF.readsplitline!(s, tmp)[1] == "\u263ae"
-    @test FWF.readsplitline!(s, tmp)[1] == "fghi"
-    @test_throws ArgumentError FWF.readsplitline!(s, tmp)[1]
-
-
+    @test FWF.readsplitline!(s, tmp) == 4
+    @test s[1] == "abcd"
+    @test FWF.readsplitline!(s, tmp) == 4
+    @test s[1] == "\u263ae"
+    @test FWF.readsplitline!(s, tmp) == 4
+    @test s[1] == "fghi"
+    @test_throws ArgumentError FWF.readsplitline!(s, tmp)
 end
 
 @testset "FWF.read Testing" begin
