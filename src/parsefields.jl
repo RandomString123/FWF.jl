@@ -36,7 +36,8 @@ function parsefield(source::FWF.Source, ::Type{T}, row::Int, col::Int) where {T}
     if col == 1
         readsplitline!(source.currentline, source)
     end
-    
+   
+    ismissing(source.currentline[col]) && return missing
     if missingon(source) && checkmissing(source.currentline[col], source.options.missingvals)
         return missing
     end

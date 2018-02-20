@@ -8,7 +8,7 @@ mutable struct Source{I} <: Data.Source
     io::I
     fullpath::String
     datapos::Int # the position in the IOBuffer where the rows of data begins
-    currentline::Vector{String}
+    currentline::Vector{Union{Missing,String}}
     lastcol::Int
     malformed::Bool # file is malformed so slow parsing
     eolpad::Int #Number of characters to pad at end of line (typically=0, 1 for CRLF files)
@@ -30,19 +30,19 @@ end
 
 # Negative values will break these functions
 
-function row_calc(lines::Int, rows::Int, skip::Int, header::Bool)
-    return row_calc(lines, rows, skip) - (header ? 1 : 0)
-end
+# function row_calc(lines::Int, rows::Int, skip::Int, header::Bool)
+#     return row_calc(lines, rows, skip) - (header ? 1 : 0)
+# end
 
-function row_calc(lines::Int, rows::Int, skip::Int, header::T) where {T}
-    return row_calc(lines, rows, skip)
-end
+# function row_calc(lines::Int, rows::Int, skip::Int, header::T) where {T}
+#     return row_calc(lines, rows, skip)
+# end
 
-function row_calc(lines::Int, rows::Int, skip::Int)
-    # rows to process, subtract skip and header if they exist
-    rows = rows <= 0 ?  lines : ( (lines < rows) ? (lines) : (rows))
-    return skip > 1 ? rows - skip : rows
-end
+# function row_calc(lines::Int, rows::Int, skip::Int)
+#     # rows to process, subtract skip and header if they exist
+#     rows = rows <= 0 ?  lines : ( (lines < rows) ? (lines) : (rows))
+#     return skip > 1 ? rows - skip : rows
+# end
 
 
 function calculate_ranges(columnwidths::Union{Vector{UnitRange{Int}}, Vector{Int}})
@@ -85,7 +85,7 @@ function Source(
     ;
     usemissings::Bool=true,
     trimstrings::Bool=true,
-    skiponerror::Bool=true,
+    errorlevel::Symbol=:parse,
     unitbytes::Bool=true,
     use_mmap::Bool=true,
     skip::Int=0,
@@ -97,7 +97,7 @@ function Source(
     # Appemtping to re-create all objects here to minimize outside tampering
     datedict = Dict{Int, DateFormat}()
     typelist = Vector{DataType}()
-    headerlist = Vector{String}()
+    headerlist = Vector{Union{Missing,String}}()
     missingdict = Dict{String, Missing}()
     rangewidths = Vector{UnitRange{Int}}()
     malformed = false
@@ -129,9 +129,11 @@ function Source(
     # Starting position
     startpos = position(source)
     # rows to process, subtract skip and header if they exist
-    lines, eolpad =  row_countlines(source, skiponerror=skiponerror)
-    rows = row_calc(lines, rows,skip, header)
-    rows < 0 && (throw(ArgumentError("More skips than rows available")))
+    lines, eolpad =  row_countlines(source)
+    skip < 0 && (skip = 0)
+    rows -= skip
+    # rows = row_calc(lines, rows,skip, header)
+    lines ≤ (isa(header, Bool) && header) + skip && (throw(ArgumentError("More skips than rows available")))
     # Go back to start
     seek(source, startpos)
 
@@ -144,9 +146,9 @@ function Source(
 
     # reposition iobuffer
     tmp = skip
-    while (!eof(source)) && (tmp > 1)
-        readline(source)  
-        tmp =- 1     
+    while (!eof(source)) && (tmp > 0)
+        readline(source)
+        tmp -= 1
     end
     datapos = position(source)
     line_len = -1
@@ -154,7 +156,7 @@ function Source(
     # Figure out headers
     if isa(header, Bool) && header
         # first row is heders
-        line_len = FWF.readsplitline!(headerlist, source, rangewidths, true)
+        line_len = FWF.readsplitline!(headerlist, source, rangewidths, true, unitbytes)
         datapos = position(source)
         for i in eachindex(headerlist)
             length(headerlist[i]) < 1 && (headerlist[i] = "Column$i")
@@ -194,18 +196,18 @@ function Source(
     end
 
     # Convert missings to dictionary for faster lookup later.
-    if !isempty(missings) 
+    if !isempty(missings)
         for entry in missings
             missingdict[entry] = missing
         end
     end
 
-    sch = Data.Schema(typelist, headerlist, ifelse(rows < 0, missing, rows))
+    sch = Data.Schema(typelist, headerlist, ifelse(rows ≤ 0, missing, rows))
     opt = Options(usemissings=usemissings, trimstrings=trimstrings, 
-                    skiponerror=skiponerror, unitbytes=unitbytes, skip=skip, missingvals=missingdict, 
+                    errorlevel=errorlevel, unitbytes=unitbytes, skip=skip, missingvals=missingdict, 
                     dateformats = datedict,
                     columnrange=rangewidths)
-    return Source(sch, opt, source, string(fullpath), datapos, Vector{String}(), 0, malformed, eolpad, line_len)
+    return Source(sch, opt, source, string(fullpath), datapos, Vector{Union{Missing,String}}(), 0, malformed, eolpad, line_len)
 end
 
 # needed? construct a new Source from a Sink
