@@ -97,7 +97,6 @@ function Source(
     # Appemtping to re-create all objects here to minimize outside tampering
     datedict = Dict{Int, DateFormat}()
     typelist = Vector{DataType}()
-    headerlist = Vector{Union{Missing,String}}()
     missingdict = Dict{String, Missing}()
     rangewidths = Vector{UnitRange{Int}}()
     malformed = false
@@ -156,10 +155,16 @@ function Source(
     # Figure out headers
     if isa(header, Bool) && header
         # first row is heders
-        line_len = FWF.readsplitline!(headerlist, source, rangewidths, true, unitbytes)
+        header_tmp = Vector{Union{Missing,String}}()
+        line_len = FWF.readsplitline!(header_tmp, source, rangewidths, true, unitbytes)
+        headerlist = Vector{String}(length(header_tmp))
         datapos = position(source)
         for i in eachindex(headerlist)
-            length(headerlist[i]) < 1 && (headerlist[i] = "Column$i")
+            if ismissing(header_tmp[i]) || isempty(header_tmp[i])
+                headerlist[i] = "Column$i"
+            else
+                headerlist[i] = header_tmp[i]
+            end
         end
     elseif (isa(header, Bool) && !header) || isempty(header)
         # number columns
