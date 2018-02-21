@@ -16,8 +16,8 @@ The parameter list without a row results in a whole column being streamed from t
 """
 function parsefield end
 
-@inline missingon(source::FWF.Source) = (source.options.usemissings)
-@inline checkmissing(key::String, d::Dict{String, Missing}) = (haskey(d, key)) 
+missingon(source::FWF.Source) = (source.options.usemissings)
+checkmissing(key::String, d::Dict{String, Missing}) = (haskey(d, key)) 
 
 function get_format(source::FWF.Source, col::Int) 
     !haskey(source.options.dateformats, col) && return nothing
@@ -50,10 +50,10 @@ end
 
 # Batch of simple parsers to convert strings
 usemissing_or_val(b, v) = b ? missing : v
-@static if VERSION >= v"0.7.0-DEV"
-    @inline null_to_missing(x, b, v) = x == nothing ? usemissing_or_val(b, v) : x
+if VERSION >= v"0.7.0-DEV"
+    null_to_missing(x, b, v) = x == nothing ? usemissing_or_val(b, v) : x
 else
-    @inline null_to_missing(x, b, v) = isnull(x) ? usemissing_or_val(b, v)  : unsafe_get(x)
+    null_to_missing(x, b, v) = isnull(x) ? usemissing_or_val(b, v)  : unsafe_get(x)
 end
 
 parsefield(::Type{Int}, usemissing::Bool, string::String, format) = 
@@ -63,9 +63,9 @@ parsefield(::Type{Float64}, usemissing::Bool, string::String, format) =
 parsefield(::Type{String}, usemissing::Bool, string::String, format) = string
 parsefield(::Type{Date}, usemissing::Bool, string::String, format) = 
     null_to_missing(tryparse(Date, string, format), usemissing, Date())
-@inline parsefield(::Type{Union{Missing, T}}, usemissing::Bool, string::String, format) where {T} = 
+parsefield(::Type{Union{Missing, T}}, usemissing::Bool, string::String, format) where {T} = 
     (parsefield(T, usemissing, string, format))
-@inline parsefield(::Type{Missing}, usemissing::Bool, string::String, format) = (missing)
+parsefield(::Type{Missing}, usemissing::Bool, string::String, format) = (missing)
 
 # Generic fallback
 function parsefield(T, usemissing::Bool, string::String, format)
