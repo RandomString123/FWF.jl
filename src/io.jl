@@ -1,12 +1,12 @@
 
 """
-    row_countlines(io::IO, len::Int; countbybytes=true, skiponerror=false)
+    row_countlines(io::IO)
 
     Count number of rows in a file, also deteremines EOL character/padding from first line.
     Test last line of file to see if it is 0 or len bytes
 """
 # To support bytes or characters this no longer does malformed testing
-function row_countlines(io::IO; skiponerror=false)
+function row_countlines(io::IO)
     rows = 0
     # EOL detection, if we don't have an EoL doesn't matter
     start_pos = position(io)
@@ -28,14 +28,15 @@ end
 
 
 """
-    FWF.readsplitline!(vals::Vector{String}, source::FWF.Source)
-    FWF.readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool, skiponerror::Bool)
+    FWF.readsplitline!(vals::Vector{Union{Missing,String}}, source::FWF.Source)
+    FWF.readsplitline!(vals::Vector{Union{Missing,String}}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool, errorlevel::Symbol)
 
 Read next line from a `FWF.Source` or `IO` as a `Vector{String}` and
 store the values in `vals`.
 Fields are determined by the field widths stored in the `source` options or `columnwidths`
 Fields will be trimed if `trim` is true
-Row or rows will be skipped if there is an error found if `skiponerror` is true
+Row or rows will be skipped if there is an error found if `errorlevel` is `:skip`
+and as much as possible is parsed if it is `:parse`.
 The contents of `vals` are replaced.
 Returns length of line read in bytes or characters following `unitbytes` keyword argument.
 """
@@ -44,10 +45,10 @@ Returns length of line read in bytes or characters following `unitbytes` keyword
 # * Ensure it meets specifications
 # * Break it into chunks based on column widths
 
-function readsplitline!(vals::Vector{String}, source::FWF.Source)
+function readsplitline!(vals::Vector{Union{Missing,String}}, source::FWF.Source)
     line_len = readsplitline!(vals, source.io, source.options.columnrange,
                               source.options.trimstrings, source.options.unitbytes,
-                              source.options.skiponerror)
+                              source.options.errorlevel)
     if source.line_len == -1
         source.line_len = line_len
     elseif source.line_len != line_len
@@ -56,14 +57,14 @@ function readsplitline!(vals::Vector{String}, source::FWF.Source)
     return line_len
 end
 
-function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool=true, unitbytes=true, skiponerror=true)
+function readsplitline!(vals::Vector{Union{Missing,String}}, io::IO, columnwidths::Vector{UnitRange{Int}}, trim::Bool=true, unitbytes=true, errorlevel=:parse)
     empty!(vals)
     # Parameter validation
     ((columnwidths == nothing) || (isempty(columnwidths))) && throw(ArgumentError("No column widths provided"))
     eof(io) && (throw(ArgumentError("IO not available")))
     
     our_length = unitbytes ? sizeof : length
-
+    
     rowlength = last(last(columnwidths))
     # Read a line and validate
     test = true
@@ -76,8 +77,11 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
         line_len = our_length(line)
         # we do not care what is in the line beyond rowlength
         if line_len < rowlength
-            !skiponerror && throw(ParsingException("Invalid length line: "*string(our_length(line))))
-            skiponerror && println(STDERR, "Invalid length line($(our_length(line))):", line)
+            !(errorlevel in (:parse, :skip)) && throw(ParsingException("Invalid length line: "*string(our_length(line))))
+            println(STDERR, "Invalid length line($(our_length(line))):", line)
+            if errorlevel == :parse
+                test = false
+            end
         else
             test = false
         end
@@ -87,6 +91,10 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
     ind = 0
     # Break it up into chunks
     for range in columnwidths
+        if errorlevel == :parse && first(range) > line_len
+            push!(vals, missing)
+            continue
+        end
         if unitbytes || isascii(line)
             # Julia 0.7 is more strict about parsing string ranges
             # below will fail if first(range) is not a valid index into line
@@ -103,7 +111,12 @@ function readsplitline!(vals::Vector{String}, io::IO, columnwidths::Vector{UnitR
                 ind = nextind(line, ind)
                 chr += 1
             end
-            str = line[ind_start:ind] # we have checked above that ind is a valid index
+            if errorlevel == :parse
+                # TODO: in Julia 1.0 we will have to replace endof
+                str = line[ind_start:min(ind, endof(line))]
+            else
+                str = line[ind_start:ind]
+            end
         end
         # strip returns SubString in Julia 0.7 or higher
         push!(vals, trim ? String(strip(str)) : str)
@@ -138,7 +151,9 @@ Keyword Arguments:
 * `usemissings::Bool`: whether to use missings, all fields will be unioned with Missing; default = true
                         if not set default values of 0, date() and "" will be used for missing values
 * `trimstrings::Bool`: trim whitespace from all strings; default = true
-* `skiponerror::Bool`: if an invalid length line is encountered will skip to the next; default = true
+* `errorlevel`  : if `:parse` then as much as possible is parsed and missing data is replaced by `missing`;
+                if `:skip` then malformed line is skipped on error;
+                on any other value an exception is thrown on error; default `:parse`
 * `use_mmap::Bool=true`: whether the underlying file will be mmapped or not while parsing; note that on Windows machines, the underlying file will not be "deletable" until Julia GC has run (can be run manually via `gc()`) due to the use of a finalizer when reading the file.
 * `skip::Int`: number of rows at start of file to skip; default = 0
 * `rows::Int`: maximum number of rows to read from file; default = 0 (whole file)

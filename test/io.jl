@@ -23,18 +23,18 @@ file2 = joinpath(dir,"sal.txt")
     @test FWF.mod_countlines(IOBuffer("")) == 0
     # Not error until malformed is back
     #@test_throws FWF.ParsingException FWF.row_countlines(IOBuffer(ml))
-    @test FWF.row_countlines(IOBuffer(ml),skiponerror=true) == (3, 0)
+    @test FWF.row_countlines(IOBuffer(ml)) == (3, 0)
     @test FWF.row_countlines(IOBuffer(nonl)) == (3, 0)
     # Used to be an error condition not now.
     #@test_throws FWF.ParsingException FWF.row_countlines(IOBuffer(extra))
-    @test FWF.row_countlines(IOBuffer(extra),skiponerror=true) == (4, 0)
-    @test FWF.row_countlines(IOBuffer(b),skiponerror=true) == (3, 0)
-    @test FWF.row_countlines(IOBuffer(cr),skiponerror=true) == (3, 1)
+    @test FWF.row_countlines(IOBuffer(extra)) == (4, 0)
+    @test FWF.row_countlines(IOBuffer(b)) == (3, 0)
+    @test FWF.row_countlines(IOBuffer(cr)) == (3, 1)
     @test FWF.row_countlines(IOBuffer(nodata)) == (0, 0)
 end
 
 @testset "readsplitline! Testing" begin
-    s = Vector{String}()
+    s = Vector{Union{Missing,String}}()
     tmp = FWF.Source(file, [4,4,8])
     FWF.readsplitline!(s, tmp)
     @test s[1] == "abcd"
@@ -87,17 +87,17 @@ end
     aaaa
     bbb
     cccc"""
-    tmp = FWF.Source(IOBuffer(b),[4])
+    tmp = FWF.Source(IOBuffer(b),[4], errorlevel=:skip)
     @test FWF.readsplitline!(s, tmp) == 4
     @test s[1] == "aaaa"
     @test FWF.readsplitline!(s, tmp) == 4
     @test s[1] == "cccc"
     # Not error until malformed is back
     #@test_throws FWF.ParsingException FWF.Source(IOBuffer(b),[4],skiponerror=false)
-    tmp = FWF.Source(IOBuffer(b),[4], skiponerror=true)
+    tmp = FWF.Source(IOBuffer(b),[4], errorlevel=:skip)
     @test FWF.readsplitline!(s, tmp) == 4
     @test s[1] == "aaaa"
-    @test tmp.schema.rows == 3
+    # @test tmp.schema.rows == 3
     #@test_throws FWF.ParsingException FWF.readsplitline!(s, tmp)
     @test FWF.readsplitline!(s, tmp) == 4
     @test s[1] == "cccc"
@@ -107,7 +107,7 @@ end
     aaaa
     bbb
     ccccc"""
-    tmp = FWF.Source(IOBuffer(b),[4])
+    tmp = FWF.Source(IOBuffer(b),[4], errorlevel=:skip)
     @test FWF.readsplitline!(s, tmp) == 4
     @test s[1] == "aaaa"
     @test FWF.readsplitline!(s, tmp) == 5
@@ -119,7 +119,7 @@ end
     aaaaa
     bbb
     cccc"""
-    tmp = FWF.Source(IOBuffer(b),[4])
+    tmp = FWF.Source(IOBuffer(b),[4], errorlevel=:skip)
     @test FWF.readsplitline!(s, tmp) == 5
     @test s[1] == "aaaa"
     @test FWF.readsplitline!(s, tmp) == 4
@@ -200,4 +200,35 @@ end
     @test tmp[1,1] == "α1x"
     @test tmp[2,1] == "a2y"
     @test tmp[3,1] == "∀∅z"
+
+    tmp = FWF.read(IOBuffer("α1\na\n∀∅z"), [1,1,1], unitbytes=false)
+    @test tmp[1,1] == "α"
+    @test tmp[1,2] == "1"
+    @test ismissing(tmp[2,2])
+    @test tmp[3,2] == "∅"
+    @test tmp[3,3] == "z"
+    @test ismissing(tmp[1,3])
+    @test ismissing(tmp[2,3])
+
+    @test_throws FWF.ParsingException FWF.read(IOBuffer("α1\na\n∀∅z"), [1,1,1], unitbytes=false, errorlevel=:error)
+
+    tmp = FWF.read(IOBuffer("α1\na\n∀∅z"), [1,1,1], unitbytes=false, errorlevel=:skip)
+    @test nrow(tmp) == 1
+    @test tmp[1,1] == "∀"
+    @test tmp[1,2] == "∅"
+    @test tmp[1,3] == "z"
+
+    tmp = FWF.read(IOBuffer("αąx\na2y\n∀∅z"), [1,1,1], unitbytes=false, header=true)
+    @test names(tmp) == [:α, :ą, :x]
+    @test nrow(tmp) == 2
+
+    tmp = FWF.read(IOBuffer("αąx\naby\n∀∅z"), [1,1,1], unitbytes=false, header=true, skip = 1)
+    @test names(tmp) == [:a, :b, :y]
+    @test nrow(tmp) == 1
+
+    @test_throws ArgumentError FWF.read(IOBuffer("αąx\na2y\n∀∅z"), [1,1,1], unitbytes=false, header=true, skip = 2)
+
+    @test_throws ArgumentError FWF.read(IOBuffer("αąx\na2y\n∀∅z"), [1,1,1], unitbytes=false, header=false, skip = 3)
+    @test nrow(FWF.read(IOBuffer("αąx\na2y\n∀∅z"), [1,1,1], unitbytes=false, header=false, skip = 2)) == 1
+    @test nrow(FWF.read(IOBuffer("αąx\na2y\n∀∅z"), [1,1,1], unitbytes=false, header=false, skip = 1)) == 2
 end

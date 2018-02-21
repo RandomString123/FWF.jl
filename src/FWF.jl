@@ -19,7 +19,9 @@ Configuration Settings for fixed width file parsing.
   * `skip`        : integer of the number of lines to skip; default `0`
   * `trimstrings` : true if strings should be trimmed; default `true`
   * `usemissings` : true if fields should be checked for null values; default `true`
-  * `skiponerror` : true if errors should not throw an exception; default `true`
+  * `errorlevel`  : if `:parse` then as much as possible is parsed and missing data is replaced by `missing`;
+                    if `:skip` then malformed line is skipped on error;
+                    on any other value an exception is thrown on error; default `:parse`
   * `countnybytes`: true if field parsing should happen by bytes, false for character based parsing; default `true` 
   * `missingvals` : Dictionary in form of String=>missing for values that equal missing
   * `dateformats` : Dictionary in the form of Int=>DateFormat to specify date formats for a column
@@ -30,7 +32,7 @@ Configuration Settings for fixed width file parsing.
 struct Options
     usemissings::Bool
     trimstrings::Bool
-    skiponerror::Bool
+    errorlevel::Symbol
     unitbytes::Bool
     skip::Int
     missingvals::Dict{String, Missing}
@@ -38,19 +40,23 @@ struct Options
     columnrange::Vector{UnitRange{Int}}
 end
 
- Options(;usemissings=true, 
-        trimstrings=true, skiponerror=true, unitbytes=true, skip=0, 
-        missingvals=Dict{String, Missing}(), 
-        dateformats=Dict{Int, DateFormat}(),
-        columnrange=Vector{UnitRange{Int}}()) =
-    Options(usemissings, trimstrings, skiponerror, unitbytes, skip, missingvals, 
-            dateformats, columnrange)
+function Options(;usemissings=true, trimstrings=true, errorlevel=:parse, unitbytes=true,
+                 skip=0, missingvals=Dict{String, Missing}(),
+                 dateformats=Dict{Int, DateFormat}(), columnrange=Vector{UnitRange{Int}}())
+    if !usemissings && (errorlevel == :parse)
+        println(STDERR, "Warning: Combination of usemissings==false and errorlevel==:parse\n"*
+               "will lead to an error when malformed lines are present in the data.\n"*
+               "In order to avoid this set usemissings to true or errorlevel to :skip.")
+    end
+    Options(usemissings, trimstrings, errorlevel, unitbytes,
+            skip, missingvals, dateformats, columnrange)
+end
 
 function Base.show(io::IO, op::Options)
     println(io, "   FWF.Options:")
     println(io, "     nullcheck: ", op.usemissings)
     println(io, "   trimstrings: ", op.trimstrings)
-    println(io, "   skiponerror: ", op.skiponerror)
+    println(io, "   errorlevel: ", op.errorlevel)
     println(io, "  countbybytes: ", op.unitbytes)
     println(io, "          skip: ", op.skip)
     println(io, "   missingvals:", )
