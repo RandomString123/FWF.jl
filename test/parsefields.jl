@@ -16,7 +16,7 @@ file = joinpath(dir,"testfile.txt")
     @test FWF.parsefield(tmp, Int, 1, 2) == 1234
     @test FWF.parsefield(tmp, Date, 1, 3) == Date("2017-10-10")
     @test FWF.parsefield(tmp, String, 2, 1) == "efgh"
-    @test FWF.parsefield(tmp, Int, 2, 2) == 5678
+    @test ismissing(FWF.parsefield(tmp, Missing, 2, 2))
     @test ismissing(FWF.parsefield(tmp, Date, 2, 3))
     @test_throws BoundsError FWF.parsefield(tmp, Date, 2, 4)
     b = """

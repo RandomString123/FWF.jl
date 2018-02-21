@@ -82,6 +82,13 @@ end
     @test s[2] == "56"
     @test s[3] == "10"
     @test_throws ArgumentError FWF.readsplitline!(s, tmp)
+    Data.reset!(tmp)
+    @test Data.accesspattern(tmp) == Data.Sequential() # not sure why this isn't a type
+    FWF.readsplitline!(s, tmp)
+    @test s[1] == "ab"
+    @test s[2] == "12"
+    @test s[3] == "10"
+    @test_throws ArgumentError FWF.readsplitline!(s, tmp.io, Vector{UnitRange{Int}}())
 
     b="""
     aaaa
