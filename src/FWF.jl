@@ -40,13 +40,17 @@ struct Options
     columnrange::Vector{UnitRange{Int}}
 end
 
- Options(;usemissings=true, 
-        trimstrings=true, errorlevel=:parse, unitbytes=true, skip=0, 
-        missingvals=Dict{String, Missing}(), 
-        dateformats=Dict{Int, DateFormat}(),
-        columnrange=Vector{UnitRange{Int}}()) =
-    Options(usemissings, trimstrings, errorlevel, unitbytes, skip, missingvals, 
-            dateformats, columnrange)
+function Options(;usemissings=true, trimstrings=true, errorlevel=:parse, unitbytes=true,
+                 skip=0, missingvals=Dict{String, Missing}(),
+                 dateformats=Dict{Int, DateFormat}(), columnrange=Vector{UnitRange{Int}}())
+    if !usemissings && (errorlevel == :parse)
+        println(STDERR, "Warning: Combination of usemissings==false and errorlevel==:parse\n"*
+               "will lead to an error when malformed lines are present in the data.\n"*
+               "In order to avoid this set usemissings to true or errorlevel to :skip.")
+    end
+    Options(usemissings, trimstrings, errorlevel, unitbytes,
+            skip, missingvals, dateformats, columnrange)
+end
 
 function Base.show(io::IO, op::Options)
     println(io, "   FWF.Options:")
