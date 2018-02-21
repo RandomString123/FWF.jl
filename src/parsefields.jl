@@ -16,8 +16,8 @@ The parameter list without a row results in a whole column being streamed from t
 """
 function parsefield end
 
-missingon(source::FWF.Source) = (source.options.usemissings)
-checkmissing(key::String, d::Dict{String, Missing}) = (haskey(d, key)) 
+@inline missingon(source::FWF.Source) = (source.options.usemissings)
+@inline checkmissing(key::String, d::Dict{String, Missing}) = (haskey(d, key)) 
 
 function get_format(source::FWF.Source, col::Int) 
     !haskey(source.options.dateformats, col) && return nothing
@@ -37,23 +37,27 @@ function parsefield(source::FWF.Source, ::Type{T}, row::Int, col::Int) where {T}
         readsplitline!(source.currentline, source)
     end
    
-    ismissing(source.currentline[col]) && return missing
-    if missingon(source) && checkmissing(source.currentline[col], source.options.missingvals)
+    tmp = source.currentline[col]
+    ismissing(tmp) && return missing
+    # We know ref is a string
+    ref = tmp::String
+    if missingon(source) && checkmissing(ref, source.options.missingvals)
         return missing
     end
     
-    return parsefield(T, source.options.usemissings, source.currentline[col], get_format(source, col))
+    return parsefield(T, source.options.usemissings, ref, get_format(source, col))
 end
 
 # Batch of simple parsers to convert strings
-@static if VERSION >= v"0.7.0-DEV"
-    null_to_missing(x, b, v) = x == nothing ? usemissing_or_val(b, v) : x
-else
-    null_to_missing(x, b, v) = isnull(x) ? usemissing_or_val(b, v)  : unsafe_get(x)
-end
 usemissing_or_val(b, v) = b ? missing : v
+@static if VERSION >= v"0.7.0-DEV"
+    @inline null_to_missing(x, b, v) = x == nothing ? usemissing_or_val(b, v) : x
+else
+    @inline null_to_missing(x, b, v) = isnull(x) ? usemissing_or_val(b, v)  : unsafe_get(x)
+end
+
 parsefield(::Type{Int}, usemissing::Bool, string::String, format) = 
-    null_to_missing(tryparse(Int, string), usemissing, "")
+    null_to_missing(tryparse(Int, string), usemissing, 0)
 parsefield(::Type{Float64}, usemissing::Bool, string::String, format) = 
     null_to_missing(tryparse(Float64, string), usemissing, 0.)
 parsefield(::Type{String}, usemissing::Bool, string::String, format) = string
