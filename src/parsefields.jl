@@ -40,7 +40,7 @@ function parsefield(source::FWF.Source, ::Type{T}, row::Int, col::Int) where {T}
     tmp = source.currentline[col]
     ismissing(tmp) && return missing
     # We know ref is a string
-    ref = tmp::String
+    ref::String = tmp
     if missingon(source) && checkmissing(ref, source.options.missingvals)
         return missing
     end
