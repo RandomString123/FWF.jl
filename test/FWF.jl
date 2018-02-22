@@ -11,4 +11,18 @@
     @test x.missingvals == Dict{String, Missing}()
     @test x.dateformats == Dict{Int, DateFormat}()
     @test x.columnrange == Vector{UnitRange{Int}}()
+
+    m = Dict{String, Missing}("***" => missing)
+    d = Dict{Int, DateFormat}(1 => DateFormat("mmddyy"))
+    x = [1:10, 2:20]
+    tmp = FWF.Options(usemissings = false, trimstrings = false, errorlevel = :skip,
+                    unitbytes = false, skip = 10, missingvals = m, dateformats = d, columnrange = x)  
+    @test tmp.usemissings == false
+    @test tmp.trimstrings == false
+    @test tmp.errorlevel == :skip
+    @test tmp.unitbytes == false
+    @test tmp.skip == 10
+    @test tmp.missingvals == m
+    @test tmp.dateformats == d
+    @test tmp.columnrange == x
 end

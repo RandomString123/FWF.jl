@@ -15,11 +15,12 @@ file = joinpath(dir,"testfile.txt")
     @test_throws ArgumentError FWF.Source(file, [4,4,8], types=[String, Float32, DateFormat("mmddyyyy")])
 
     tmp = FWF.Source(file, [4,4,8])
+    show(IOBuffer(), tmp) # Will retult in exception if problem unfortunately there is no @test_notthrows
     @test Data.header(tmp.schema)[1] == "Column1"
     @test Data.header(tmp.schema)[2] == "Column2"
     @test Data.header(tmp.schema)[3] == "Column3"
 
-    tmp = FWF.Source(file, [4,4,8], header=true)
+    tmp = FWF.Source(open(file, "r"), [4,4,8], header=true)
     @test Data.header(tmp.schema)[1] == "abcd"
     @test Data.header(tmp.schema)[2] == "1234"
     @test Data.header(tmp.schema)[3] == "10102017"
@@ -49,16 +50,6 @@ end
     abc
     def"""
 
-    # @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], 0, 0, true) == 1
-    # @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], 0, 0, false) == 2
-    # @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], 0, 0) == 2
-    # @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], 0, 2) == 0
-    # @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], 1, 0) == 1
-    # @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], -1, 0) == 2
-    # @test FWF.row_calc(FWF.row_countlines(IOBuffer(b))[1], 0, -1) == 2
-    #@test_throws ArgumentError FWF.row_calc(IOBuffer(b), 0, 3)
-    #@test_throws ArgumentError FWF.row_calc(IOBuffer(b), 0, 2, true)
-    
     # Range building
     @test_throws ArgumentError FWF.calculate_ranges([-1,2,3])
     @test_throws ArgumentError FWF.calculate_ranges([-1:2])
