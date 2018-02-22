@@ -17,7 +17,7 @@ The parameter list without a row results in a whole column being streamed from t
 function parsefield end
 
 missingon(source::FWF.Source) = (source.options.usemissings)
-checkmissing(key::String, d::Dict{String, Missing}) = (haskey(d, key)) 
+checkmissing(key::String, d::Set{String}) = key in d
 
 function get_format(source::FWF.Source, col::Int) 
     !haskey(source.options.dateformats, col) && return nothing

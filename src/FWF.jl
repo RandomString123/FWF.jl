@@ -21,9 +21,9 @@ Configuration Settings for fixed width file parsing.
   * `usemissings` : true if fields should be checked for null values; default `true`
   * `errorlevel`  : if `:parse` then as much as possible is parsed and missing data is replaced by `missing`;
                     if `:skip` then malformed line is skipped on error;
-                    on any other value an exception is thrown on error; default `:parse`
+                    if `:error` then an exception is thrown on error; default `:parse`
   * `countnybytes`: true if field parsing should happen by bytes, false for character based parsing; default `true` 
-  * `missingvals` : Dictionary in form of String=>missing for values that equal missing
+  * `missingvals` : Set{String} for values that equal missing
   * `dateformats` : Dictionary in the form of Int=>DateFormat to specify date formats for a column
   * `columnrange` : Vector of UnitRanges that specifcy the widths of each column.
   * ``
@@ -35,18 +35,21 @@ struct Options
     errorlevel::Symbol
     unitbytes::Bool
     skip::Int
-    missingvals::Dict{String, Missing}
+    missingvals::Set{String}
     dateformats::Dict{Int, DateFormat}
     columnrange::Vector{UnitRange{Int}}
 end
 
 function Options(;usemissings=true, trimstrings=true, errorlevel=:parse, unitbytes=true,
-                 skip=0, missingvals=Dict{String, Missing}(),
+                 skip=0, missingvals=Set{String}(),
                  dateformats=Dict{Int, DateFormat}(), columnrange=Vector{UnitRange{Int}}())
     if !usemissings && (errorlevel == :parse)
         println(STDERR, "Warning: Combination of usemissings==false and errorlevel==:parse\n"*
                "will lead to an error when malformed lines are present in the data.\n"*
                "In order to avoid this set usemissings to true or errorlevel to :skip.")
+    end
+    if !(errorlevel in [:parse, :skip, :error])
+        throw(ArgumentError("Allowed values for errorlevel are :parse, :skip or :error"))
     end
     Options(usemissings, trimstrings, errorlevel, unitbytes,
             skip, missingvals, dateformats, columnrange)

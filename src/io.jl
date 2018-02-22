@@ -149,11 +149,11 @@ Keyword Arguments:
 
 * `unitbytes::Bool`: whether to treat field ranges in bytes or characters; default = true (bytes)
 * `usemissings::Bool`: whether to use missings, all fields will be unioned with Missing; default = true
-                        if not set default values of 0, date() and "" will be used for missing values
+                        if not set default values of 0, Date() and "" will be used for missing values
 * `trimstrings::Bool`: trim whitespace from all strings; default = true
 * `errorlevel`  : if `:parse` then as much as possible is parsed and missing data is replaced by `missing`;
                 if `:skip` then malformed line is skipped on error;
-                on any other value an exception is thrown on error; default `:parse`
+                if `:error` then an exception is thrown on error; default `:parse`
 * `use_mmap::Bool=true`: whether the underlying file will be mmapped or not while parsing; note that on Windows machines, the underlying file will not be "deletable" until Julia GC has run (can be run manually via `gc()`) due to the use of a finalizer when reading the file.
 * `skip::Int`: number of rows at start of file to skip; default = 0
 * `rows::Int`: maximum number of rows to read from file; default = 0 (whole file)

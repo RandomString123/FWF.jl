@@ -8,15 +8,15 @@
     @test x.errorlevel == :parse
     @test x.unitbytes == true
     @test x.skip == 0
-    @test x.missingvals == Dict{String, Missing}()
+    @test x.missingvals == Set{String}()
     @test x.dateformats == Dict{Int, DateFormat}()
     @test x.columnrange == Vector{UnitRange{Int}}()
 
-    m = Dict{String, Missing}("***" => missing)
+    m = Set{String}(["***"])
     d = Dict{Int, DateFormat}(1 => DateFormat("mmddyy"))
     x = [1:10, 2:20]
-    tmp = FWF.Options(usemissings = false, trimstrings = false, errorlevel = :skip,
-                    unitbytes = false, skip = 10, missingvals = m, dateformats = d, columnrange = x)  
+    tmp = FWF.Options(usemissings=false, trimstrings=false, errorlevel=:skip,
+                      unitbytes=false, skip=10, missingvals=m, dateformats=d, columnrange=x)
     @test tmp.usemissings == false
     @test tmp.trimstrings == false
     @test tmp.errorlevel == :skip
@@ -25,4 +25,8 @@
     @test tmp.missingvals == m
     @test tmp.dateformats == d
     @test tmp.columnrange == x
+
+    @test_throws ArgumentError FWF.Options(usemissings=false, trimstrings=false,
+                                           errorlevel=:x, unitbytes=false, skip=10,
+                                           missingvals=m, dateformats=d, columnrange=x)
 end
