@@ -97,7 +97,6 @@ function Source(
     # Appemtping to re-create all objects here to minimize outside tampering
     datedict = Dict{Int, DateFormat}()
     typelist = Vector{DataType}()
-    missingdict = Dict{String, Missing}()
     rangewidths = Vector{UnitRange{Int}}()
     malformed = false
 
@@ -200,16 +199,12 @@ function Source(
         end
     end
 
-    # Convert missings to dictionary for faster lookup later.
-    if !isempty(missings)
-        for entry in missings
-            missingdict[entry] = missing
-        end
-    end
+    # Convert missings to Set for faster lookup later.
+    missingset=Set{String}(missings)
 
     sch = Data.Schema(typelist, headerlist, ifelse(rows ≤ 0, missing, rows))
     opt = Options(usemissings=usemissings, trimstrings=trimstrings, 
-                    errorlevel=errorlevel, unitbytes=unitbytes, skip=skip, missingvals=missingdict, 
+                    errorlevel=errorlevel, unitbytes=unitbytes, skip=skip, missingvals=missingset,
                     dateformats = datedict,
                     columnrange=rangewidths)
     return Source(sch, opt, source, string(fullpath), datapos, Vector{Union{Missing,String}}(), 0, malformed, eolpad, line_len)

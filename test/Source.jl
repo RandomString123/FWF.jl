@@ -41,8 +41,8 @@ file = joinpath(dir,"testfile.txt")
     @test Data.types(tmp.schema)[2] == Union{Missing, Int64}
     @test Data.types(tmp.schema)[3] == Union{Missing, Date}
     @test tmp.options.dateformats[3] == DateFormat("mmddyyyy")
-    @test haskey(tmp.options.missingvals, "***")
-    haskey(tmp.options.missingvals, "NA")
+    @test "***" in tmp.options.missingvals
+    @test "NA" in tmp.options.missingvals
 end
 
 @testset "Functions" begin
