@@ -22,6 +22,7 @@ fixed width data files and loading them into julia.  It has the features
 * Skip or parse malformed rows without terminating parsing
 * Custom header specifiction
 * Start of file row skipping
+* Autodetect column widths if there is a separator between them using `scan` function
 
 Items of note the package does not support, but could if desired
 * Column type detection
