@@ -21,3 +21,5 @@ include("FWF.jl")
 include("Source.jl")
 include("parsefields.jl")
 include("io.jl")
+include("scan.jl")
+
